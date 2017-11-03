@@ -1,0 +1,3 @@
+[27-Oct-2016 00:48:22 CST6CDT] PHP Fatal error:  Call to a member function links() on a non-object in /home/taxiappz/public_html/taxidemo/app/views/admins.blade.php on line 7
+[27-Oct-2016 00:48:27 CST6CDT] PHP Fatal error:  Class 'Config' not found in /home/taxiappz/public_html/taxidemo/app/views/banking_provider_stripe.blade.php on line 11
+[27-Oct-2016 00:48:33 CST6CDT] PHP Fatal error:  Call to undefined function asset_url() in /home/taxiappz/public_html/taxidemo/app/views/edit_admin.blade.php on line 88

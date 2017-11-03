@@ -1,0 +1,2 @@
+[24-Aug-2016 18:36:59 CST6CDT] PHP Fatal error:  Class 'Eloquent' not found in /home/taxicad/public_html/taxidemo/app/models/Admin.php on line 8
+[24-Aug-2016 18:39:57 CST6CDT] PHP Fatal error:  Class 'Eloquent' not found in /home/taxicad/public_html/taxidemo/app/models/Document.php on line 3

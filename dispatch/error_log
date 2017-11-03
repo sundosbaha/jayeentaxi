@@ -1,0 +1,10 @@
+[29-Jun-2016 02:57:15 America/Chicago] PHP Fatal error:  Cannot use string offset as an array in /home2/taxicad/public_html/taxi/dispatch/application/controllers/Booking.php on line 212
+[29-Jun-2016 03:02:09 America/Chicago] PHP Fatal error:  Cannot use string offset as an array in /home2/taxicad/public_html/taxi/dispatch/application/controllers/Booking.php on line 212
+[29-Jun-2016 03:11:25 America/Chicago] PHP Fatal error:  Cannot use string offset as an array in /home2/taxicad/public_html/taxi/dispatch/application/controllers/Booking.php on line 212
+[29-Jun-2016 03:12:31 America/Chicago] PHP Fatal error:  Cannot use string offset as an array in /home2/taxicad/public_html/taxi/dispatch/application/controllers/Booking.php on line 212
+[29-Jun-2016 05:44:55 America/Chicago] PHP Fatal error:  Call to undefined method CI_Config::set_value() in /home2/taxicad/public_html/taxi/dispatch/application/controllers/Settings.php on line 28
+[29-Jun-2016 10:04:02 America/Chicago] PHP Fatal error:  Call to undefined method Booking_Model::getPickup() in /home2/taxicad/public_html/taxi/dispatch/application/views/booking_details.php on line 88
+[29-Jun-2016 10:04:32 America/Chicago] PHP Fatal error:  Call to undefined function get_address_trip() in /home2/taxicad/public_html/taxi/dispatch/application/views/booking_details.php on line 89
+[29-Jun-2016 10:05:20 America/Chicago] PHP Fatal error:  Class 'Config' not found in /home2/taxicad/public_html/taxi/dispatch/application/models/Booking_Model.php on line 120
+[29-Jun-2016 10:05:23 America/Chicago] PHP Fatal error:  Class 'Config' not found in /home2/taxicad/public_html/taxi/dispatch/application/models/Booking_Model.php on line 120
+[29-Jun-2016 10:39:22 America/Chicago] PHP Parse error:  syntax error, unexpected '->' (T_OBJECT_OPERATOR), expecting identifier (T_STRING) or variable (T_VARIABLE) or '{' or '$' in /home2/taxicad/public_html/taxi/dispatch/application/views/booking_details.php on line 89

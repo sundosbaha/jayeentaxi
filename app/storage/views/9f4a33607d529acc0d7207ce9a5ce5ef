@@ -1,0 +1,32 @@
+
+<?php $__env->startSection('content'); ?>
+
+
+
+<div class="box box-info tbl-box">
+    <div align="left" id="paglink"><?php echo $admin->appends(array('type' => Session::get('type'), 'valu' => Session::get('valu')))->links(); ?></div>
+    <table class="table table-bordered">
+        <tbody>
+            <tr>
+                <th><?php echo strtoupper(trans('customize.id')); ?></th>
+                <th><?php echo trans('customize.User'),' ',trans('customize.name'); ?></th>
+                
+                <th style="width: 105px;"><?php echo trans('customize.actions'); ?></th>
+            </tr>
+            
+            <?php $i=1; foreach ($admin as $ad) { ?>
+                <tr>
+                <td><?php echo $i; ?></td>
+                   <td><?php echo $ad->username; ?></td>
+                    <td><?php if($ad->type != 'super') {?> <a href="<?php echo url('admin/privilege', [$ad->id]) ?>" class="btn btn-primary"><?php echo trans('customize.set_privilege'); ?></a><?php } ?>
+                    
+ 
+                </tr>
+            <?php $i++;  } ?>
+        </tbody>
+    </table>
+    <div align="left" id="paglink"><?php echo $admin->appends(array('type' => Session::get('type'), 'valu' => Session::get('valu')))->links(); ?></div>
+</div>
+
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layout', array_except(get_defined_vars(), array('__data', '__path')))->render(); ?>

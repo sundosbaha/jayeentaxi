@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+<!-- START Head -->
+<head>
+    <?php $theme = Theme::all(); ?>
+    <!-- START META SECTION -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="author" content="pampersdry.info">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+    <title><?= $title ?> | <?= Config::get('app.website_title') ?> Web Dashboard</title>
+
+    <?php
+    $active = '#000066';
+    $logo = '/image/logo.png';
+    $favicon = '/image/favicon.ico';
+    foreach ($theme as $themes) {
+        $active = $themes->active_color;
+        $favicon = '/uploads/' . $themes->favicon;
+        $logo = '/uploads/' . $themes->logo;
+    }
+    if ($logo == '/uploads/') {
+        $logo = '/image/logo.png';
+    }
+    if ($favicon == '/uploads/') {
+        $favicon = '/image/favicon.ico';
+    }
+    ?>
+
+
+    <link rel="icon" type="image/ico" href="<?php echo asset_url(); ?><?php echo $favicon; ?>">
+
+    <!--<link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet" type="text/css" />-->
+    <link href="<?php echo asset_url(); ?>/admins/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+    <!--<link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" />-->
+    <link href="<?php echo asset_url(); ?>/admins/font-awesome.min.css" rel="stylesheet" type="text/css"/>
+    <!-- Ionicons -->
+    <!--<link href="//code.ionicframework.com/ionicons/1.5.2/css/ionicons.min.css" rel="stylesheet" type="text/css" />-->
+    <link href="<?php echo asset_url(); ?>/admins/ionicons.min.css" rel="stylesheet" type="text/css"/>
+
+    <!-- Theme style -->
+    <link href="<?php echo asset_url(); ?>/admins/css/AdminLTE.css" rel="stylesheet" type="text/css"/>
+    <link href="<?php echo asset_url(); ?>/admins/css/custom-admin.css" rel="stylesheet" type="text/css"/>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.3/themes/smoothness/jquery-ui.css">
+    <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="//code.jquery.com/ui/1.11.3/jquery-ui.js"></script>
+    <script src="<?php echo asset_url(); ?>/admins/js/validator/jquery.validate.js"></script>
+    <noscript>
+        This page needs JavaScript activated to work.
+        <style>div {
+                display: none;
+            }
+
+            header {
+                display: none;
+            }</style>
+    </noscript>
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+    <style type="text/css">
+        .error {
+            color: red;
+        }
+    </style>
+    <script src="<?php echo asset_url(); ?>/web/js/validation.js"></script>
+</head>
+
+<body class="skin-blue">
+<!-- header logo: style can be found in header.less -->
+<header class="header">
+    <a class="logo" href="{{ URL::Route('AdminMapview') }}">
+        <!-- Add the class icon to your logo image or logo icon to add the margining -->
+        <img src="<?php echo asset_url(); ?><?php echo $logo; ?>" width="40" height="40"> <?php
+        $siteTitle = Config::get('app.website_title');
+        echo $siteTitle;
+        ?>
+    </a>
+    <!-- Header Navbar: style can be found in header.less -->
+    <nav class="navbar navbar-static-top" role="navigation">
+        <!-- Sidebar toggle button-->
+        <a href="#" class="navbar-btn sidebar-toggle" data-toggle="offcanvas" role="button">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </a>
+        <style>
+            .btn-primary.gradient {
+                background: -moz-linear-gradient(top, #33a6cc 50%, #0099cc 50%); /* FF3.6+ */
+                background: -webkit-gradient(linear, left top, left bottom, color-stop(50%, #33a6cc), color-stop(50%, #0099cc)); /* Chrome,Safari4+ */
+                background: -webkit-linear-gradient(top, #33a6cc 50%, #0099cc 50%); /* Chrome10+,Safari5.1+ */
+                background: -o-linear-gradient(top, #33a6cc 50%, #0099cc 50%); /* Opera 11.10+ */
+                background: -ms-linear-gradient(top, #33a6cc 50%, #0099cc 50%); /* IE10+ */
+                background: linear-gradient(to bottom, #33a6cc 50%, #0099cc 50%); /* W3C */
+                filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#33a6cc', endColorstr='#0099cc', GradientType=0); /* IE6-9 */
+            }
+
+            .btn-primary.gradient:hover, .btn-primary.gradient:focus, .btn-primary.gradient:active, .btn-primary.gradient.active, .open > .dropdown-toggle.btn-primary {
+                background: -moz-linear-gradient(top, #66b2cc 50%, #33a6cc 50%); /* FF3.6+ */
+                background: -webkit-gradient(linear, left top, left bottom, color-stop(50%, #66b2cc), color-stop(50%, #33a6cc)); /* Chrome,Safari4+ */
+                background: -webkit-linear-gradient(top, #66b2cc 50%, #33a6cc 50%); /* Chrome10+,Safari5.1+ */
+                background: -o-linear-gradient(top, #66b2cc 50%, #33a6cc 50%); /* Opera 11.10+ */
+                background: -ms-linear-gradient(top, #66b2cc 50%, #33a6cc 50%); /* IE10+ */
+                background: linear-gradient(to bottom, #66b2cc 50%, #33a6cc 50%); /* W3C */
+                filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#66b2cc', endColorstr='#33a6cc', GradientType=0); /* IE6-9 */
+            }
+
+            .btn-primary.gradient:active, .btn-primary.gradient.active {
+                background: -moz-linear-gradient(top, #267c99 50%, #007299 50%); /* FF3.6+ */
+                background: -webkit-gradient(linear, left top, left bottom, color-stop(50%, #267c99), color-stop(50%, #007299)); /* Chrome,Safari4+ */
+                background: -webkit-linear-gradient(top, #267c99 50%, #007299 50%); /* Chrome10+,Safari5.1+ */
+                background: -o-linear-gradient(top, #267c99 50%, #007299 50%); /* Opera 11.10+ */
+                background: -ms-linear-gradient(top, #267c99 50%, #007299 50%); /* IE10+ */
+                background: linear-gradient(to bottom, #267c99 50%, #007299 50%); /* W3C */
+                filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#267c99', endColorstr='#007299', GradientType=0); /* IE6-9 */
+            }
+        </style>
+
+
+        <div class="navbar-right">
+            <ul class="nav navbar-nav">
+                <?php
+                $urll = $url = DB::table('privilege')
+                    ->select(DB::raw('url'))
+                    ->where('userid', '=', Session::get('admin_id'))
+                    ->get();
+                ?>
+
+
+                <!-- User Account: style can be found in dropdown.less -->
+                <li class="dropdown user user-menu">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                        <i class="glyphicon glyphicon-user"></i>
+                        <span>{{trans('customize.Admin'); }}</span>
+                    </a>
+
+
+                    <ul class="dropdown-menu">
+
+                        <!-- Menu Body -->
+                        <?php if (!inarray('AdminAdmins', $urll)) { ?>
+                        <li class="user-body">
+                            <div class="col-xs-12 text-center">
+                                <a href="{{ URL::Route('AdminAdmins') }}">{{trans('customize.admin_control') }}</a>
+                            </div>
+                            <?php } ?>
+
+                        </li>
+                        <!-- Menu Footer-->
+                        <li class="user-footer">
+                            <div class="col-md-12">
+                                <a class="btn btn-default btn-flat btn-block" href="{{ URL::Route('AdminLogout') }}">{{trans('customize.log_out');
+                                    }}</a>
+                            </div>
+
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <a target="_blank" href="<?php $link = str_replace('public', '', url());
+        echo $link . "public/dispatch/login"; ?>" class="btn btn-primary btn-sm gradient"
+           style="float:right;margin-right: 50px;margin-top: 10px;">{{trans('customize.dispatcher'); }}</a>
+    </nav>
+</header>
+
+<div class="wrapper row-offcanvas row-offcanvas-left">
+    <!-- Left side column. contains the logo and sidebar -->
+    <aside class="left-side sidebar-offcanvas">
+        <!-- sidebar: style can be found in sidebar.less -->
+        <section class="sidebar">
+            <ul class="sidebar-menu">
+
+                <?php if (!inarray('AdminReport', $urll)) { ?>
+                    <li id="dashboard" title="Dashboard">
+                        <a href="{{ URL::Route('AdminReport') }}"><i class="fa fa-dashboard"></i> <span>{{trans('customize.Dashboard'); }}</span></a>
+                    </li>
+                <?php } ?>
+
+                <?php if (!inarray('AdminMapview', $urll)) { ?>
+
+                    <li id="map-view" title="Map View">
+                        <a href="{{ URL::Route('AdminMapview') }}"><i class="fa fa-map-marker"></i> <span>{{trans('customize.map_view'); }}</span></a>
+                    </li>
+
+                <?php } ?>
+
+                <?php if (!inarray('AdminProviders', $urll)) { ?>
+
+                    <li id="walkers" title="Providers">
+                        <a href="{{ URL::Route('AdminProviders') }}"><i class="fa fa-users"></i> <span>{{trans('customize.Provider').'s'; }}</span></a>
+                    </li>
+
+                <?php } ?>
+
+                <?php if (!inarray('AdminRequests', $urll)) { ?>
+
+                    <li id="walks" title="Requests">
+                        <a href="{{ URL::Route('AdminRequests') }}"><i class="fa fa-location-arrow"></i> <span>{{ trans('customize.Request').'s'; }}</span></a>
+                    </li>
+                <?php } ?>
+
+                <?php if (!inarray('AdminUsers', $urll)) { ?>
+
+                    <li id="owners" title="Users">
+                        <a href="{{ URL::Route('AdminUsers') }}"><i class="fa fa-users"></i> <span>{{ trans('customize.User').'s'; }}</span></a>
+                    </li>
+                <?php } ?>
+
+                <?php if (!inarray('AdminReviews', $urll)) { ?>
+                    <li id="reviews" title="Reviews">
+                        <a href="{{ URL::Route('AdminReviews') }}"><i class="fa fa-thumbs-o-up"></i> <span>{{ trans('customize.Reviews'); }}</span></a>
+                    </li>
+                <?php } ?>
+
+                <?php if (!inarray('AdminInformations', $urll)) { ?>
+                    <li id="information" title="Information">
+                        <a href="{{ URL::Route('AdminInformations') }}"><i class="fa fa-info-circle"></i> <span>{{ trans('customize.Information'); }}</span></a>
+                    </li>
+                <?php } ?>
+
+                <?php if (!inarray('AdminProviderTypes', $urll)) { ?>
+                    <li id="provider-type" title="Provider Types">
+                        <a href="{{ URL::Route('AdminProviderTypes') }}"><i class="fa fa-tags"></i> <span>{{ trans('customize.Types'); }}</span></a>
+                    </li>
+                <?php } ?>
+
+                <?php if (!inarray('AdminDocumentTypes', $urll)) { ?>
+                    <!-- <li id="document-type" title="Provider Types">
+                         <a href="{{ URL::Route('AdminDocumentTypes') }}"><i class="fa fa-file-text-o"></i> <span>{{ trans('customize.Documents'); }}</span></a>
+                     </li>-->
+                <?php } ?>
+
+                <?php if (!inarray('AdminPromoCodes', $urll)) { ?>
+                    <li id="promo_code" title="Promo Code">
+                        <a href="{{ URL::Route('AdminPromoCodes') }}"><i class="fa fa-gift"></i> <span>{{ trans('customize.promo_codes'); }}</span></a>
+                    </li>
+                <?php } ?>
+
+                <?php if (!inarray('AdminKeywords', $urll)) { ?>
+                    <li id="keywords" title="Kewords">
+                        <a href="{{ URL::Route('AdminKeywords') }}"><i class="fa fa-pencil-square"></i> <span>{{ trans('customize.Customize'); }}</span></a>
+                    </li>
+                <?php } ?>
+
+                <?php if (!inarray('AdminPayment', $urll)) { ?>
+                    <li id="payments" title="Payment Details">
+                        <a href="{{ URL::Route('AdminPayment') }}"><i class="fa fa-money"></i> <span>{{trans('customize.payment_details');}}</span></a>
+                    </li>
+                <?php } ?>
+
+                <?php if (!inarray('AdminSettings', $urll)) { ?>
+                    <li id="settings" title="Setings">
+                        <a href="{{ URL::Route('AdminSettings') }}"><i class="fa fa-cogs"></i> <span>{{trans('customize.Settings');}}</span></a>
+                    </li>
+                <?php } ?>
+
+                <?php if (!inarray('listusers', $urll)) { ?>
+                    <li id="privilege" title="Dashboard">
+                        <a href="{{ URL::Route('listusers') }}"><i class="fa fa-dashboard"></i> <span>{{trans('customize.privilege'); }}</span></a>
+                    </li>
+                <?php } ?>
+
+                <?php $setting = DB::table('settings')->where('key', '=', 'zone_division')->first();
+                if ($setting->value) { ?>
+                    <?php if (!inarray('ZoneDivision', $urll)) { ?>
+                        <li id="zonedivision" title="Zone Division">
+                            <a href="{{ URL::Route('ZoneDivisions') }}"><i class="fa fa-dashboard"></i>
+                                <span>{{trans('customize.zonedivision'); }}</span></a>
+                        </li>
+                    <?php }
+                } ?>
+
+            </ul>
+        </section>
+        <!-- /.sidebar -->
+    </aside>
+
+    <!-- Right side column. Contains the navbar and content of the page -->
+    <aside class="right-side">
+
+        <section class="content-header">
+            <h1>
+                <?= $title ?>
+
+            </h1>
+
+        </section>
+
+        <!-- Main content -->
+        <section class="content">
+            @yield('content')
+        </section><!-- /.content -->
+    </aside><!-- /.right-side -->
+</div><!-- ./wrapper -->
+
+
+<!--model-->
+
+<style>
+    .modal-header, h4, .close {
+        background-color: #fff;
+        color: #000 !important;
+        text-align: center;
+        font-size: 30px;
+
+    }
+
+    .modal-footer {
+        background-color: #f9f9f9;
+    }
+</style>
+
+<?php
+if ($page == 'settings' || $page == 'keywords' || $page == 'walkers') {
+    ?>
+    <!-- Modal -->
+    <div class="modal fade" id="errormodel" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content" style="width:100%;height:100%;">
+                <div class="modal-header" style="padding:6px 50px;border-bottom:1px solid #f3a706;">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+
+                    <h4><img src="<?php echo asset_url(); ?><?php echo $logo; ?>" width="40" height="40">
+                        <!--<span class="glyphicon glyphicon-lock"></span>--> TaxiAppz</h4>
+                </div>
+                <div class="modal-body" style="padding:40px 50px;">
+                    <h1 style="text-align:center; color:#605d5d; font-size:40px;">Sorry!</h1>
+                    <h3 style="text-align:center; color:#605d5d;">This option not available for demo version.</h3>
+                    <img src="<?php echo asset_url(); ?>/image/taxinow.png"
+                         style="margin-left: 40%; width:100px; height:100px;">
+                </div>
+                <!-- <div class="modal-footer">
+                   <button class="btn btn-danger btn-default pull-left" style="text-align:center;" data-dismiss="modal"><span class="glyphicon glyphicon-remove"></span> Close</button>
+                 </div>-->
+            </div>
+        </div>
+    </div>
+    <?php
+}
+?>
+
+
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js" type="text/javascript"></script>
+
+
+<!-- AdminLTE App -->
+<script src="<?php echo asset_url(); ?>/admins/js/AdminLTE/app.js" type="text/javascript"></script>
+<!-- AdminLTE for demo purposes -->
+<script src="<?php echo asset_url(); ?>/admins/js/AdminLTE/demo.js" type="text/javascript"></script>
+<script src="<?php echo asset_url(); ?>/admins/js/AdminLTE/bootstrap-notify.min.js" type="text/javascript"></script>
+
+
+<?php if (isset($page) && $page == 'privilege') { ?>
+    <script>
+
+        $(document).ready(function (e) {
+
+        });
+
+        function chan(urll, userid) {
+
+
+            $.ajax({
+                type: 'POST',
+                url: "{{ URL::Route('adminaddprivilege') }}",
+                data: "url=" + urll + "&userid=" + userid,
+                success: function (data) {
+                    //alert(data);
+
+                    if (data == 'true') {
+                        $.notify({
+                            title: "Success:",
+                            message: "Access Privilage is set"
+                        });
+
+                    }
+                    if (data == 'false') {
+                        $.notify({
+                            title: "Success:",
+                            message: "Access Privilage is unset"
+                        });
+                    }
+                },
+                error: function (a, b, c) {
+
+                    console.log(a);
+                    console.log(b);
+                    console.log(c);
+                }
+            });
+        }
+    </script>
+
+    <?php
+}
+?>
+
+<script type="text/javascript">
+
+    $("#<?= $page ?>").addClass("active");
+    $('#option3').show();
+    $('.fade').css('opacity', '1');
+    $('.nav-pills > li.active > a, .nav-pills > li.active > a:hover, .nav-pills > li.active > a:focus').css('color', '#ffffff');
+    $('.nav-pills > li.active > a, .nav-pills > li.active > a:hover, .nav-pills > li.active > a:focus').css('background-color', '<?php echo $active; ?>');
+</script>
+
+<script>
+    $(function () {
+
+        $("#start-date").datepicker({
+            defaultDate: "+1w",
+            changeMonth: true,
+            numberOfMonths: 1,
+            onClose: function (selectedDate) {
+                $("#end-date").datepicker("option", "minDate", selectedDate);
+            }
+        });
+        $("#end-date").datepicker({
+            defaultDate: "+1w",
+            changeMonth: true,
+            numberOfMonths: 1,
+            onClose: function (selectedDate) {
+                $("#start-date").datepicker("option", "maxDate", selectedDate);
+            }
+        });
+    });
+</script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("#myModal").modal('show');
+    });
+</script>
+
+
+<!--Start of Zopim Live Chat Script-->
+
+
+<script type="text/javascript">
+    window.__lc = window.__lc || {};
+    window.__lc.license = 8233301;
+    (function () {
+        var lc = document.createElement('script');
+        lc.type = 'text/javascript';
+        lc.async = true;
+        lc.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'cdn.livechatinc.com/tracking.js';
+        var s = document.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(lc, s);
+    })();
+</script>
+
+<!--End of Zopim Live Chat Script-->
+
+</body>
+<!--/ END Body -->
+</html>

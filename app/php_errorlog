@@ -1,0 +1,2 @@
+[24-Aug-2016 18:36:40 CST6CDT] PHP Fatal error:  Class 'BaseController' not found in /home/taxicad/public_html/taxidemo/app/OwnerController.php on line 3
+[24-Aug-2016 18:37:52 CST6CDT] PHP Fatal error:  Class 'Route' not found in /home/taxicad/public_html/taxidemo/app/routes_20_5_2016.php on line 14

@@ -1,0 +1,73 @@
+@charset "utf-8";
+/* CSS Document */
+body {
+	margin:0 auto;
+	padding:0;
+	/*background:#EFE3E3;*/
+}
+.input-group { 
+    width:100%;
+}
+.panel-heading {
+	top: 17px;
+    position: relative;
+    font-size: 18px;
+    text-transform: uppercase;
+    color: #464444;
+}
+
+#overlay {
+    position: absolute;
+	z-index:999;
+	width:100%;
+	height:100%;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    background: #000;
+    opacity: 0.8;
+    filter: alpha(opacity=80);
+}
+#loading {
+    width: 50px;
+    height: 57px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: -28px 0 0 -25px;
+}
+
+.loader-new {
+    border: 16px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 16px solid #CE9D12;
+    border-bottom: 16px solid #CE9D12;
+    width: 120px;
+    height: 120px;
+	top: 45%;
+	position: relative;
+	left: 48%;
+    -webkit-animation: spin 2s linear infinite;
+    animation: spin 2s linear infinite;
+ /* background-image:url(taxi_logo.jpg);*/
+}
+.taxi_img {
+	 
+     position: absolute;
+	 top: 50%;
+position: absolute;
+left: 50.4%; 
+     width: 90px;
+     border-radius: 47px;}
+.loader:hover { animation: unset !important;}
+
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

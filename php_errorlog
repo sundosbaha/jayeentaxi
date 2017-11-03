@@ -1,0 +1,1 @@
+[19-May-2016 05:06:47 CST6CDT] PHP Fatal error:  Cannot use object of type mysqli_result as array in /home/taxiclon/public_html/development/ride_later_cron.php on line 27
