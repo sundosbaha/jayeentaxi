@@ -136,12 +136,12 @@
                          <input type="hidden" name="executive_user_id" value="3" id="executive_user_id" />
                     </div>
                 </div>
-                   <button type="submit" class="btn btn-primary" style="background:#e03129;" id="rideNowbutton" ><?php echo Lang::get('dispatcher.ride_now'); ?></button>
+                   <button type="submit" class="btn btn-primary" style="background:#76ad1c;" id="rideNowbutton" ><?php echo Lang::get('dispatcher.ride_now'); ?></button>
              <button type="button"  class="btn btn-primary"   style="background: #23374a;
 " onClick="valid()"><?php echo Lang::get('dispatcher.ride_late'); ?>
 
 </button>
-<button type="button"  class="btn btn-primary"  id="estimate" style="background: #e03129;
+<button type="button"  class="btn btn-primary"  id="estimate" style="background: #76ad1c;
 "><?php echo Lang::get('dispatcher.estimate_price'); ?>
 
 </button>
@@ -489,7 +489,7 @@
     
 <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/2.3.2/js/bootstrap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.0/js/bootstrap-datepicker.js"></script>
-<script src="http://taxiappz.com/demo/public/dispatcher/js/bootstrap-timepicker.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-timepicker/0.5.2/js/bootstrap-timepicker.js"></script>
 
  <script>
 	//Timepicker
@@ -1653,7 +1653,39 @@ function valid()
 function addbookingAjax(schedule=0)
 {
 	console.log("Inside Ajax call");
-	
+
+
+    var time = $("#booking_time_picker").val();
+    var hours = Number(time.match(/^(\d+)/)[1]);
+    var minutes = Number(time.match(/:(\d+)/)[1]);
+    var AMPM = time.match(/\s(.*)$/)[1];
+    if (AMPM == "PM" && hours < 12) hours = hours + 12;
+    if (AMPM == "AM" && hours == 12) hours = hours - 12;
+    var sHours = hours.toString();
+    var sMinutes = minutes.toString();
+    if (hours < 10) sHours = "0" + sHours;
+    if (minutes < 10) sMinutes = "0" + sMinutes;
+    console.log(sHours + ":" + sMinutes);
+
+    var select_Date=$('#booking_date_picker').val() + ' ' + sHours + ":" + sMinutes + ':00';
+    select_Date=new Date(select_Date);
+
+
+    var system_original_date=new Date(); //current system date before modify
+    system_original_date.setMinutes(system_original_date.getMinutes()+30);//current system date after add 35 minute
+    var system_Date=new Date(system_original_date); //modified date into date object
+
+    if(select_Date.getTime()<system_Date.getTime()){    // To get time stamp getTime()
+        alert("Invalid Time");
+        $('#booking_time_picker').val('');
+        return false;
+    }
+    /*else{
+        alert("Invalid Time");
+        $('#booking_time_picker').val('');
+        return false;
+    }*/
+
 	
 		var phone_num=$('#customerMobile').val();
 		var user_id=$('#customerId').val();
@@ -1740,7 +1772,7 @@ function addbookingAjax(schedule=0)
    },
    type: 'POST'
 });
-marklocationinmap();
+//marklocationinmap();
 	return false;
 }
 

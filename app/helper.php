@@ -28,6 +28,58 @@ function generate_wallet_id($user){
 
 }
 
+function applyPromocode($user_id,$request_id){
+
+
+        $promo_user_details = UserPromoUse::where('user_id', '=', $user_id)->where('is_used',0)->first();
+
+
+        if(!empty($promo_user_details)){
+
+
+            if ($promos = PromoCodes::where('id', $promo_user_details->code_id)->where('uses', '>', 0)->where('state', '=', 1)->first()) {
+
+        if ((date("Y-m-d H:i:s") >= date("Y-m-d H:i:s", strtotime(trim($promos->expiry)))) || (date("Y-m-d H:i:s") <= date("Y-m-d H:i:s", strtotime(trim($promos->start_date))))) {
+
+
+            $promo_user_details->is_used=1;
+            $promo_user_details->save();
+
+            return false;
+
+        }else{
+
+            $promo_update_counter = PromoCodes::find($promos->id);
+
+            $promo_update_counter->uses = $promo_update_counter->uses - 1;
+
+            $promo_update_counter->save();
+
+            
+            $promo_user_details->is_used=1;
+            $promo_user_details->save();
+
+            $owner = Owner::find($user_id);
+            $owner->promo_count = $owner->promo_count + 1;
+            $owner->save();
+
+
+            return $promo_update_counter;
+        }
+        }else{
+
+            $promo_user_details->is_used=1;
+            $promo_user_details->save();
+
+            return false;
+        }
+        }else{
+            
+            return false;
+        }
+
+}
+
 function lastGenerationId($name = ''){
 
     $bookingName = (!empty( $name ) ? $name : '');
@@ -225,6 +277,7 @@ function microtime_float()
 }
 
 
+
 function send_request($url,$data,$requestType)
 {	
 $curl = curl_init();
@@ -242,8 +295,6 @@ $resp = curl_exec($curl);
 curl_close($curl);
  return  $resp;
 }
-
-
 function returnDurationAndDestination($origin,$desti) {
     try
     {
@@ -251,7 +302,8 @@ function returnDurationAndDestination($origin,$desti) {
         // Set some options - we are passing in a useragent too here
         curl_setopt_array($curl, array(
             CURLOPT_RETURNTRANSFER => 1,
-            CURLOPT_URL => 'https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=' . $origin . '&destinations=' . $desti . '&key=AIzaSyD17Rw0_wNiulS8Cp8jduFh4-KGoUtrvSM',
+           // CURLOPT_URL => 'https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=' . $origin . '&destinations=' . $desti . '&key=AIzaSyD17Rw0_wNiulS8Cp8jduFh4-KGoUtrvSM',
+            CURLOPT_URL => 'https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=' . $origin . '&destinations=' . $desti . '&key=AIzaSyAXatDcDqW3hERFA-zpeX86juvvWQr8ycM',
             CURLOPT_USERAGENT => 'Codular Sample cURL Request'
         ));
         // Send the request & save response to $resp
@@ -266,11 +318,13 @@ function returnDurationAndDestination($origin,$desti) {
     }
     catch(Exception $e)
     {
+
         $distance = 1;
         $duration = 1;
     }
     return compact('distance','duration');
 }
+
 
 function duration($origin,$desti)
 
@@ -735,9 +789,14 @@ function email_notification($id, $type, $message_body, $subject, $trip = null, $
         $settings = Settings::where('key', 'admin_email_address')->first();
         $email = $settings->value;
         //dd($email);
-    } else {
+    } elseif($type == 'admin_user'){
+        $user = Admin::find($id);
+        $email = preg_replace('/\s+/', '', $user->username);
+
+    }else {
         $user = Owner::find($id);
         $email = $user->email;
+
         //  dd($email);
     }
     if ($email_notification == 1 || $is_imp == "imp") {
@@ -752,6 +811,16 @@ function email_notification($id, $type, $message_body, $subject, $trip = null, $
         } else if ($trip == 'walker_approve') {
             try {
                 Mail::send('emails.approve_walker_mail', array('mail_body' => $message_body), function ($message) use ($email, $subject) {
+                    $message->to($email)->subject($subject);
+                });
+            } catch (Services_Twilio_RestException $e) {
+                Log::error($e->getMessage());
+            }
+        } else if ($trip == 'admin_forget_password') {
+
+            try {
+
+                Mail::send('emails.email_admin_forget_password', array('mail_body' => $message_body), function ($message) use ($email, $subject) {
                     $message->to($email)->subject($subject);
                 });
             } catch (Services_Twilio_RestException $e) {

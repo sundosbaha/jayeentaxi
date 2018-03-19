@@ -213,7 +213,7 @@
                                 <th>{{ trans('language_changer.type') }}</th>
                                 <th>{{ trans('language_changer.base_price') }}</th>
                                 <th>{{ trans('language_changer.price_per_unit_distance') }}</th>
-                                <th>{{ trans('language_changer.price_per_unit_time') }}</th>
+                                <th>{{ trans('language_changer.price_per_unit_time'),'('.trans('language_changer.minutes').')' }}</th>
                                 <th>{{ trans('language_changer.max_size') }}</th>
                                 <th>{{ trans('language_changer.base_distance') }}</th>
                                 <th>{{ trans('language_changer.visible') }}</th>

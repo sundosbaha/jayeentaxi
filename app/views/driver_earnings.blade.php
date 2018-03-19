@@ -3,31 +3,34 @@
 @section('content')
 
 
+    <p align="right"><a href="{{ URL::Route('AdminProviders') }}"><button class="btn btn-info btn-flat">{{ trans('language_changer.back_to_driver') }} </button></a></p>
 
-    <!--  Summary end -->
-    <!-- filter start -->
+
     <div class="box box-danger">
         <div class="box-header">
-            <h3 class="box-title">Filter</h3>
+            <h3 class="box-title">{{ trans('language_changer.filter')  }}</h3>
         </div>
+
+
+
         <div class="box-body">
             <div class="row">
                 <form role="form" method="get" action="{{ URL::Route('DriverEarnings') }}">
                     <div class="col-md-6 col-sm-6 col-lg-6">
                         <input type="text" class="form-control" style="overflow:hidden;" id="start-date"
-                               name="start_date" value="{{ Input::get('start_date') }}" placeholder="Start Date">
+                               name="start_date" value="{{ Input::get('start_date') }}" placeholder="{{ trans('language_changer.start'),' ',trans('language_changer.date') }}">
                         <br>
                     </div>
 
                     <div class="col-md-6 col-sm-6 col-lg-6">
                         <input type="text" class="form-control" style="overflow:hidden;" id="end-date" name="end_date"
-                               placeholder="End Date" value="{{ Input::get('end_date') }}">
+                               placeholder="{{ trans('language_changer.end'),' ',trans('language_changer.date') }}" value="{{ Input::get('end_date') }}">
                         <br>
                     </div>
             </div>
         </div><!-- /.box-body -->
         <div class="box-footer">
-            <button type="submit" name="submit" class="btn btn-primary" value="Filter_Data">Filter Data</button>
+            <button type="submit" name="submit" class="btn btn-primary" value="Filter_Data"> {{ trans('language_changer.filter') }}</button>
             <!--<button type="submit" name="submit" class="btn btn-primary" value="Download_Report">Download Report</button>-->
         </div>
 
@@ -40,10 +43,10 @@
         <table id="example" class="display" cellspacing="0" width="100%">
             <thead>
             <tr>
-                <th>S.no</th>
-                <th>Driver Name</th>
-                <th>Driver Payment</th>
-                <th>Total Trip</th>
+                <th>{{ trans('language_changer.s_no') }}</th>
+                <th>{{ trans('language_changer.name') }}</th>
+                <th>{{ trans('language_changer.payment') }}</th>
+                <th>{{ trans('language_changer.total'),' ',trans('language_changer.trip') }}</th>
             </tr>
             </thead>
             <tbody>

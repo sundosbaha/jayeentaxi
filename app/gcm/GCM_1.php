@@ -1,7 +1,7 @@
 <?php
 
 /*array(
-    'GOOGLE_API_KEY' => 'AIzaSyDqThKm_S8AVL6OwtHACa59t4cIi6GwoB8',
+    'GOOGLE_API_KEY' => 'AIzaSyAXatDcDqW3hERFA-zpeX86juvvWQr8ycM',
 );*/
 /*
  * To change this template, choose Tools | Templates
@@ -13,7 +13,7 @@
  *
  * @author Ravi Tamada
  */
-define('GOOGLE_API_KEY', 'AIzaSyDqThKm_S8AVL6OwtHACa59t4cIi6GwoB8');
+define('GOOGLE_API_KEY', 'AIzaSyAXatDcDqW3hERFA-zpeX86juvvWQr8ycM');
 /*define('GOOGLE_API_KEY', 'AIzaSyAKe3XmUV93WvHJvII4Qzpf0R052mxb0KI');*/
 /*define('GOOGLE_API_KEY', 'AIzaSyC0JjF-O72-gUvUmUm_dsHHvG5o3aWosp8');*/
 

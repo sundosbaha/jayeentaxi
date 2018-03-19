@@ -624,6 +624,7 @@ class WalkerController extends BaseController {
                             }
                             $walker->token = generate_token();
                             $walker->token_expiry = generate_expiry();
+                            $walker->is_active = 0;
                             $walker->save();
                             $txt_approve = "Decline";
                             if ($walker->is_approved) {
@@ -700,6 +701,7 @@ class WalkerController extends BaseController {
                             $walker->device_token = $device_token;
                         }
                         $walker->token_expiry = generate_expiry();
+                        $walker->is_active = 0;
                         $walker->save();
                         $txt_approve = "Decline";
                         if ($walker->is_approved) {
@@ -1161,7 +1163,7 @@ class WalkerController extends BaseController {
 
 
                     /* if ($counter) { */
-                    $response_array = array('success' => true, 'is_approved' => $walker_data->is_approved, 'is_approved_txt' => $txt_approve, 'is_available' => $walker_data->is_active, 'incoming_requests' => $all_requests);
+                    $response_array = array('success' => true, 'is_approved' => $walker_data->is_approved, 'is_approved_txt' => $txt_approve, 'is_available' => $walker_data->is_active,'in_free' => $walker_data->is_available ,'incoming_requests' => $all_requests);
                     $response_code = 200;
                     /* } else {
                       $response_array = array('success' => false, 'error' => 'no request found', 'error_code' => 505);
@@ -1233,7 +1235,8 @@ class WalkerController extends BaseController {
                                     // request ended
                                     Requests::where('id', '=', $request_id)->update(array('confirmed_walker' => $walker_id, 'status' => 1));
                                 } else {
-                                    Requests::where('id', '=', $request_id)->update(array('confirmed_walker' => $walker_id, 'status' => 1, 'request_start_time' => date('Y-m-d H:i:s')));
+                                    Requests::where('id', '=', $request_id)->update(array('confirmed_walker' => $walker_id, 'status' => 1, 'request_start_time' => date('Y-m-d H:i:s'),'is_walker_started'=>1,'is_walker_arrived'=>1));
+                                    //Requests::where('id', '=', $request_id)->update(array('confirmed_walker' => $walker_id, 'status' => 1, 'request_start_time' => date('Y-m-d H:i:s')));
                                 }
                                 // confirm walker
                                 RequestMeta::where('request_id', '=', $request_id)->where('walker_id', '=', $walker_id)->update(array('status' => 1));
@@ -1854,7 +1857,10 @@ class WalkerController extends BaseController {
                                 //$bill['minutes'] = ( !empty($minutes) ? $minutes : 0);
                                 $bill['main_total'] = currency_converted($request->total);
                                 $bill['actual_total'] = currency_converted($request->total + $request->ledger_payment + $discount);
-                                $bill['total'] = currency_converted($request->total + $request->ledger_payment + $request->promo_payment);
+                               // $bill['total'] = currency_converted($request->total + $request->ledger_payment + $request->promo_payment);
+                                $bill['total'] = ($request->total - $request->ledger_payment - $request->promo_payment) > 0 ? currency_converted($request->total - $request->ledger_payment - $request->promo_payment) :  "0.00";
+
+
                                 $bill['referral_bonus'] = currency_converted($request->ledger_payment);
                                 $bill['promo_bonus'] = currency_converted($request->promo_payment);
                                 $bill['payment_type'] = $request->payment_mode;
@@ -2444,7 +2450,9 @@ class WalkerController extends BaseController {
 
     // walk started
     public function request_walk_started() {
+
         if (Request::isMethod('post')) {
+
             $request_id = Input::get('request_id');
             $token = Input::get('token');
             $walker_id = Input::get('id');
@@ -2462,14 +2470,14 @@ class WalkerController extends BaseController {
                         'walker_id' => $walker_id,
                         'latitude' => $latitude,
                         'longitude' => $longitude,
-                         'type'=>$type,
+                        // 'type'=>$type,
                             ), array(
                         'request_id' => 'required|integer',
                         'token' => 'required',
                         'walker_id' => 'required|integer',
                         'latitude' => 'required',
                         'longitude' => 'required',
-                        'type'=>'required',
+                        //'type'=>'required',
                             )
             );
 
@@ -2488,12 +2496,17 @@ class WalkerController extends BaseController {
                         if ($request = Requests::find($request_id)) {
                             if ($request->confirmed_walker == $walker_id) {
 
+                                $request_service=RequestServices::where('request_id',$request_id)->first();
+
+
                                 if ($request->is_walker_arrived == 1) {
                                     $req_zone_id=$request->zone_id;
-                                    $req_type=$type;
+                                    $req_type=$request_service->type;
 
                                     $walker_type=ProviderType::find($req_type);
                                     $zone_type=DB::table('zone_type')->where('type',$req_type)->where('zone_id',$req_zone_id)->whereNull('deleted_at')->first();//print_r($zone_type);
+
+
 
                                     $service_cost=array();
                                     $service_cost['zone_id']=$zone_type->zone_id;
@@ -2695,7 +2708,7 @@ class WalkerController extends BaseController {
 
                         // Do necessary operations
                         if ($request = Requests::find($request_id)) {
-                            $time = $request->time;
+                            //$time = $request->time;
                             if ($request->confirmed_walker == $walker_id) {
 
                                 if ($request->is_started == 1) {
@@ -2718,8 +2731,8 @@ class WalkerController extends BaseController {
                                             /*echo"hi";
                                             die();1*/
                                             $walkerRecords = walkerTripCompletedUpdateRecords($reqServices, $zone_id, $distance, $time,$trip_waiting_time);
-                                        /*    print_r($walkerRecords);
-die();*/
+                                            /*print_r($walkerRecords);
+die("t");*/
                                             $actual_total = $walkerRecords['actual_total'];
                                             $price_per_unit_time = $walkerRecords['price_per_unit_time'];
                                             $price_per_unit_distance = $walkerRecords['price_per_unit_distance'];
@@ -2778,6 +2791,7 @@ die();*/
                                             $is_multiple_service = Settings::where('key', 'allow_multiple_service')->first();
                                             if ($is_multiple_service->value == 0) {
 
+
                                                 if ($pt->price_per_unit_distance == 0) {
                                                     /* $setdistance_price = Settings::where('key', 'price_per_unit_distance')->first();
                                                       $price_per_unit_distance = $setdistance_price->value * $distance;
@@ -2810,14 +2824,22 @@ die();*/
                                                     }
 
                                                     $rse->time_cost = $price_per_unit_time;
+
+
+
+
                                                 } else {
                                                     $price_per_unit_time = $pt->price_per_unit_time * ($time-$trip_waiting_time);
                                                     $rse->time_cost = $price_per_unit_time;
+
                                                 }
                                             }
 
                                             Log::info('total price = ' . print_r($base_price + $price_per_unit_distance + $price_per_unit_time, true));
                                             $rse->total = $base_price + $price_per_unit_distance + $price_per_unit_time;
+
+
+
                                             $rse->save();
                                             $actual_total = $actual_total + $base_price + $price_per_unit_distance + $price_per_unit_time;
                                             Log::info('total_price = ' . print_r($actual_total, true));
@@ -2886,7 +2908,7 @@ die();*/
 
 
                                     /* Service Fee ( CASH ) - CALCULATION OF ADMIN AND DRIVER PERCENTAGE -- Rangasamy */
-                                    $settings = Settings::where('key', 'service_fee')->first();
+                                    $settings = Settings::where('key', 'service_fee_cash')->first();
                                     $adminPercentage = (!empty( $settings->value ) ? $settings->value : '');
 
                                     if(!empty($adminPercentage) && $adminPercentage != 0) {
@@ -3194,7 +3216,7 @@ die();*/
                                                         $response = Response::json($response_array, $response_code);
                                                         return $response;
                                                     }
-                                                    $settng = Settings::where('key', 'service_fee')->first();
+                                                    $settng = Settings::where('key', 'service_fee_cash')->first();
                                                     if ($transfer_allow == 1 && $walker_data->merchant_id != "" && Config::get('app.generic_keywords.Currency') == '$') {
 
                                                         $transfer = Stripe_Transfer::create(array(
@@ -3211,7 +3233,7 @@ die();*/
                                                         Braintree_Configuration::publicKey(Config::get('app.braintree_public_key'));
                                                         Braintree_Configuration::privateKey(Config::get('app.braintree_private_key'));
                                                         if ($transfer_allow == 1) {
-                                                            $sevisett = Settings::where('key', 'service_fee')->first();
+                                                            $sevisett = Settings::where('key', 'service_fee_cash')->first();
                                                             $service_fee = $sevisett->value * $total / 100;
                                                             $result = Braintree_Transaction::sale(array(
                                                                         'amount' => $total - $service_fee,
@@ -3357,6 +3379,12 @@ die();*/
 
                                     $requestserv = RequestServices::where('request_id', $request->id)->first();
                                     $bill = array();
+
+                                   /* print_r($requestserv);
+                                    die("p");*/
+
+
+
                                     /* $currency_selected = Keywords::find(5); */
                                     if ($request->is_completed == 1) {
                                         $settings = Settings::where('key', 'default_distance_unit')->first();
@@ -3372,10 +3400,15 @@ die();*/
                                         $bill['time'] = floatval(sprintf2($request->time, 2));
 
                                         if ($requestserv->base_price != 0) {
+
+                                          //  print_r($requestserv->time_cost);
+//die("p");
                                             $bill['base_price'] = currency_converted($requestserv->base_price);
                                             $bill['distance_cost'] = currency_converted($requestserv->distance_cost);
                                             $bill['time_cost'] = currency_converted(floatval(sprintf2($requestserv->time_cost, 2)));
                                         } else {
+
+                                          //  die("i");
                                             /* $setbase_price = Settings::where('key', 'base_price')->first();
                                               $bill['base_price'] = currency_converted($setbase_price->value); */
                                             $bill['base_price'] = currency_converted($providertype->base_price);
@@ -3399,12 +3432,14 @@ die();*/
                                         /* $bill['currency'] = $currency_selected->keyword; */
                                         $bill['currency'] = Config::get('app.generic_keywords.Currency');
                                         $bill['actual_total'] = currency_converted($actual_total);
-                                        $bill['total'] = currency_converted($request->total);
+                                      //  $bill['total'] = currency_converted($request->total);
+                                      $bill['total'] = ($request->total - $request->ledger_payment - $request->promo_payment) > 0 ? currency_converted($request->total - $request->ledger_payment - $request->promo_payment) :  "0.00";
+
                                         $bill['is_paid'] = $request->is_paid;
                                         $bill['promo_discount'] = currency_converted($promo_total);
 
                                         $bill['main_total'] = currency_converted($request->total);
-                                        $bill['total'] = currency_converted($request->total - $request->ledger_payment - $request->promo_payment);
+                                      //  $bill['total'] = currency_converted($request->total - $request->ledger_payment - $request->promo_payment);
                                         $bill['referral_bonus'] = currency_converted($request->ledger_payment);
                                         $bill['promo_bonus'] = currency_converted($request->promo_payment);
                                         $bill['payment_type'] = $request->payment_mode;
@@ -3423,7 +3458,7 @@ die();*/
                                     $typs = array();
                                     $typi = array();
                                     $typp = array();
-                                    foreach ($rservc as $typ) {
+                                   /* foreach ($rservc as $typ) {
                                         $typ1 = ProviderType::where('id', $typ->type)->first();
                                         $typ_price = ProviderServices::where('provider_id', $request->confirmed_walker)->where('type', $typ->type)->first();
 
@@ -3443,7 +3478,7 @@ die();*/
                                         $typs['price'] = $typp1;
 
                                         array_push($typi, $typs);
-                                    } $bill['type'] = $typi;
+                                    } $bill['type'] = $typi;*/
                                     $rserv = RequestServices::where('request_id', $request_id)->get();
                                     $typs = array();
                                     foreach ($rserv as $typ) {
@@ -3527,6 +3562,9 @@ die();*/
                                     }
 
                                     $requestserv = RequestServices::where('request_id', $request->id)->first();
+                                  /*  print_r($requestserv);
+                                    die();*/
+
                                     //Zone Enable Single Trip charge Details
                                     if ($setting_zone->value == 1) {
 
@@ -3650,7 +3688,6 @@ die();*/
 
                                     $email_data['start_location'] = $start_location;
                                     $email_data['end_location'] = $end_location;
-
 									$owner_data1['start_location']=$start_address;
 									$owner_data1['end_location']=$end_address;
 
@@ -3970,7 +4007,7 @@ die();*/
                                                 Braintree_Configuration::privateKey(Config::get('app.braintree_private_key'));
                                                 $card_id = $payment_data->card_token;
                                                 $setting = Settings::where('key', 'paypal')->first();
-                                                $settng1 = Settings::where('key', 'service_fee')->first();
+                                                $settng1 = Settings::where('key', 'service_fee_cash')->first();
                                                 if ($setting->value == 2 && $walker_data->merchant_id != NULL) {
                                                     // escrow
                                                     $result = Braintree_Transaction::sale(array(
@@ -5102,7 +5139,7 @@ die();*/
                         $request['owner']['payment_opt'] = $data->payment_mode;
 
                         /* CALCULATION OF ADMIN AND DRIVER PERCENTAGE -- Rangasamy testing*/
-                        $settings = Settings::where('key', 'service_fee')->first();
+                        $settings = Settings::where('key', 'service_fee_cash')->first();
                         $adminPercentage = (!empty( $settings->value ) ? $settings->value : '');
 
                         if(!empty($adminPercentage) && $adminPercentage != 0) {
@@ -5367,6 +5404,7 @@ die();*/
                         $walker_data->old_latitude = 0;
                         $walker_data->old_longitude = 0;
                         $walker_data->device_token = 0;
+                        $walker_data->is_active = 0;
                         /* $walker_data->is_login = 0; */
                         $walker_data->save();
 
@@ -5487,7 +5525,7 @@ die();*/
 
 
     public function  create_request(){
-
+        
         $token = Input::get('token');
         $walker_id = Input::get('id');
         $phoneNumber = Input::get('phoneNumber');

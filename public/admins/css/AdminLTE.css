@@ -676,7 +676,7 @@ body > .header .logo .icon {
  /* padding: 12px 5px 12px 15px;*/
   padding: 12px 30px 15px 15px;
   display: block;
-  border-bottom: 1px solid #132638;
+  border-bottom: 1px solid #efc707;
 }
 .sidebar .sidebar-menu > li > a > .fa,
 .sidebar .sidebar-menu > li > a > .glyphicon,
@@ -1544,11 +1544,8 @@ td a {
 text-shadow: 0px 0px rgb(221, 216, 216);
 }
 .btn {
-   /*background: rgb(250,156,68) !important;*/
-   /* background: #fcad26 !important;*/
-   background: #23374a !important;
-   /* border-radius: 10px !important;*/
-   /*border: transparent !important;*/
+   background: #0f1010 !important;
+
 }
 .box.box-primary {
   border-top-color: #3c8dbc;
@@ -2749,10 +2746,8 @@ font-weight: 600;
 */
 /* skin-blue navbar */
 .skin-blue .navbar {
-    /*background: rgb(255,128,20);*/
-        /*background: rgb(42,42,42);*/
-		/*background:#c6150d;*/
-		background:#f7a40f;
+
+		background:#76ad1c;
 }
 .skin-blue .navbar .nav a {
   color: rgba(255, 255, 255, 0.8);
@@ -2838,7 +2833,7 @@ border-bottom: 1px solid #4a3c3c;*/
     /*background-color: rgba(42, 40, 40, 0.6) !important;*/
    /* background: rgb(60,60,60) !important;*/
   /* background: #ec4139 !important;*/
-  background-color:#339834;
+  background-color:#76ad1c;
   border-left: 2px solid #CACACA;
   
 }
@@ -2855,11 +2850,13 @@ border-bottom: 1px solid #4a3c3c;*/
   box-shadow: inset -3px 0px 8px -4px rgba(0, 0, 0, 0.07);
   /*background-color: #2e3e4e;*/
         /*background-color: rgb(42,42,42);*/
-		background-color:#23374a;
+		/*background-color:#23374a;*/
+		background-color:#d8c667;
   /*  background: url(../img/bck.jpg) repeat center center fixed;*/
 }
 .skin-blue .sidebar a {
-  color: #CACACA;
+  /*color: #CACACA;*/
+  color: #0a0a0a;
 }
 .skin-blue .sidebar a:hover {
   text-decoration: none;

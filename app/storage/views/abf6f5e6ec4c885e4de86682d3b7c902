@@ -1,0 +1,256 @@
+<?php
+
+/*        echo "<pre>";
+        print_r($walker);
+        die("k");*/
+
+?>
+
+
+
+
+<?php $__env->startSection('content'); ?>
+    <div class="box box-primary" dir="<?php echo trans('language_changer.text_format'); ?>">
+        <div class="box-header"></div><!-- /.box-header -->
+        <!-- form start -->
+        <form method="post" id="main-form" action="<?php echo URL::Route('AdminProviderUpdate'); ?>"  enctype="multipart/form-data">
+            <input type="hidden" name="id" value="<?= $walker->id ?>">
+
+            <div class="box-body">
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.first'),' ',trans('language_changer.name'); ?>
+
+                    </label>
+
+                    <input type="text"  class="form-control" name="first_name" value="<?= $walker->first_name ?>" placeholder="<?php echo trans('language_changer.first'),' ',trans('language_changer.name'); ?>" _disabled>
+                </div>
+
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.last'),' ',trans('language_changer.name'); ?></label>
+                    <input class="form-control" type="text" name="last_name" value="<?= $walker->last_name ?>" placeholder="<?php echo trans('language_changer.last'),' ',trans('language_changer.name'); ?>" _disabled>
+                </div>
+<!--
+{{--
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select class="form-control" id="gender" name="gender">
+                        <option value="">Select</option>
+                        <option value="m"
+                        <?php  if(isset($walker->gender) && ($walker->gender == 'm') ){
+                            echo "Selected=Selected";
+                        } ?>
+
+                        >Male</option>
+                        <option value="f"
+                        <?php  if(isset($walker->gender) && ($walker->gender == 'f') ){
+                            echo "Selected=Selected";
+                        } ?>
+
+                        >Female</option>
+                    </select>
+                    <?php if($errors->has('gender')): ?><p style="color:red;"><?php echo $errors->first('gender'); ?></p><?php endif; ?>
+                </div>
+--}}
+
+
+-->
+
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.email'); ?></label>
+                    <input class="form-control" type="email" name="email" value="<?php echo $walker->email ?>" placeholder="<?php echo trans('language_changer.email'); ?>"  >
+                </div>
+
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.phone'); ?></label>
+                    <input class="form-control" type="text" name="phone" value="<?php $pno= preg_replace('/[^A-Za-z0-9\-]/', '', $walker->phone);echo $pno; ?>" placeholder="<?php echo trans('language_changer.phone'); ?>" >
+                    <p class="help-block"><?php echo trans('language_changer.country_code_note'); ?></p>
+                </div>
+
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.bio'); ?></label>
+                    <input class="form-control" type="text" name="bio" value="<?= $walker->bio ?>" placeholder="<?php echo trans('language_changer.bio'); ?>" >
+                </div>
+
+
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.address'); ?></label>
+                    <input class="form-control" type="text" name="address" value="<?= $walker->address ?>" placeholder="<?php echo trans('language_changer.address'); ?>" >
+                </div>
+
+
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.state'); ?></label>
+                    <input class="form-control" type="text" name="state" value="<?= $walker->state ?>" placeholder="<?php echo trans('language_changer.state'); ?>" >
+                </div>
+
+
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.country'); ?></label>
+                    <input class="form-control" type="text" name="country" value="<?= $walker->country ?>" placeholder="<?php echo trans('language_changer.country'); ?>">
+                </div>
+
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.zip_Code'); ?></label>
+                    <input class="form-control" type="text" name="zipcode" value="<?= $walker->zipcode ?>" placeholder="<?php echo trans('language_changer.zip_Code'); ?>" >
+                </div>
+
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.car'), ' ' ,trans('language_changer.number'); ?></label>
+                    <input class="form-control" type="text" name="car_number" value="<?= $walker->car_number ?>" placeholder="<?php echo trans('language_changer.car'), ' ' ,trans('language_changer.number'); ?>" >
+                </div>
+
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.car'), ' ' ,trans('language_changer.model'); ?></label>
+                    <input class="form-control" type="text" name="car_model" value="<?= $walker->car_model ?>" placeholder="<?php echo trans('language_changer.car'), ' ' ,trans('language_changer.model'); ?>">
+                </div>
+
+
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.profile'),' ',trans('language_changer.image'); ?></label>
+                    <input class="form-control" type="file" name="pic" >
+                    <br>
+                    <img src="<?= $walker->picture; ?>" height="50" width="50"><br>
+                    <p class="help-block"><?php echo trans('language_changer.image_format'); ?></p>
+                </div>
+
+
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.is_currently_providing'); ?> </label>
+                    <?php
+                    $walk = DB::table('walk')
+                            ->select('id')
+                            ->where('walk.is_started', 1)
+                            ->where('walk.is_completed', 0)
+                            ->where('walker_id', $walker->id);
+                    $count = $walk->count();
+                    if ($count > 0) {
+                        echo trans('language_changer.yes');
+                    } else {
+                        echo trans('language_changer.no');
+                    }
+                    ?>
+                </div>
+                <div class="form-group">
+                    <label>Types</label>
+                    <select class="form-control" id="type" name="type">
+                        <option value="">Type</option>
+                        <?php foreach ($walkerTypes as $key=>$walkerType): ?>
+                        <option value="<?php echo $walkerType->id; ?>" <?php
+                                if (isset($walker->type) && $walker->type == $walkerType->id) {
+                                    echo 'selected="selected"';
+                                }
+                                ?>><?php echo $walkerType->name; ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php if($errors->has('type')): ?><p style="color:red;"><?php echo $errors->first('type'); ?></p><?php endif; ?>
+                </div>
+
+
+
+
+                <div class="form-group">
+                    <label><?php echo trans('language_changer.is_provider_active'); ?>  : </label>
+                    <?php
+                    $walk = DB::table('walker')
+                            ->select('id')
+                            ->where('walker.is_active', 1)
+                            ->where('walker.id', $walker->id);
+                    $count = $walk->count();
+                    if ($count > 0) {
+                        echo trans('language_changer.yes');
+                    } else {
+                        echo trans('language_changer.no');
+                    }
+                    ?>
+                </div>
+
+
+
+            </div><!-- /.box-body -->
+
+            <div class="box-footer">
+
+                <button type="submit" class="btn btn-primary btn-flat btn-block"><?php echo trans('language_changer.update'),' ', trans('language_changer.change'); ?></button>
+            </div>
+        </form>
+    </div>
+
+
+
+    <?php
+    if(isset($success)){
+
+    if ($success == 1) { ?>
+    <script type="text/javascript">
+        var msg=<?php echo trans('language_changer.walker'),' ',trans('language_changer.profile'),' ',trans('language_changer.update'),' ',trans('language_changer.successfully'); ?>
+
+        alert(msg);
+    </script>
+    <?php } ?>
+    <?php if ($success == 2) { ?>
+    <script type="text/javascript">
+        alert('Sorry Something went Wrong');
+    </script>
+    <?php } ?>
+
+    <?php
+    if($success == 3) { ?>
+    <script type="text/javascript">
+        var msg="Please Upload image as Jpeg or png"
+        alert(msg);
+    </script>
+    <?php } ?>
+    <?php
+    if($success == 4) { ?>
+    <script type="text/javascript">
+        var msg="<?php echo trans('language_changer.email_already_exit'); ?>";
+        alert(msg);
+    </script>
+    <?php } ?>
+    <?php
+    if($success == 5) { ?>
+    <script type="text/javascript">
+        var msg="<?php echo trans('language_changer.phone_already_exit'); ?>";
+        alert(msg);
+    </script>
+    <?php }
+
+    }?>
+
+
+
+
+
+    <script type="text/javascript">
+        $("#main-form").validate({
+            rules: {
+                first_name: "required",
+                last_name: "required",
+                country: "required",
+                email: {
+                    required: true,
+                    email: true
+                },
+                state: "required",
+                address: "required",
+                //gender: "required",
+
+                bio: "required",
+                zipcode: {
+                    required: true,
+                    number: true,
+                },phone: {
+                    required: true,
+                    number: true,
+                }
+
+
+            }
+        });
+    </script>
+
+
+
+
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layout', array_except(get_defined_vars(), array('__data', '__path')))->render(); ?>

@@ -38,15 +38,17 @@
             </select>
         </div>
         <div class="form-group col-md-6 col-sm-6">
-            <label>{{ trans('language_changer.base_price'),' (',trans('language_changer.in_us_dollar'),')  ' }}</label> <span id="no_amount_error1" style="display: none"> </span>
+            <label>{{ trans('language_changer.base_price'),'('.$currency.')' }}</label> <span id="no_amount_error1" style="display: none"> </span>
             <input type="text" class="form-control" onkeypress="return Isamount(event, 1);" placeholder="{{ trans('language_changer.base_price') }}" name="base_price" value="<?= $base_price ?>">
         </div>
         <div class="form-group col-md-6 col-sm-6">
-            <label>{{ trans('language_changer.price_per_unit_distance'),' (',trans('language_changer.in_us_dollar'),')  ' }} </label> <span id="no_amount_error2" style="display: none"> </span>
+            <label>{{ trans('language_changer.price_per_unit_distance'),'('.$currency.')'}} </label> <span id="no_amount_error2" style="display: none"> </span>
             <input type="text" class="form-control" onkeypress="return Isamount(event, 2);" placeholder="{{ trans('language_changer.price_per_unit_distance') }}" name="distance_price" value="<?= $price_per_unit_distance ?>">
         </div>
         <div class="form-group col-md-6 col-sm-6">
-            <label>{{ trans('language_changer.price_per_unit_time'),' (',trans('language_changer.in_us_dollar'),')  ' }} </label> <span id="no_amount_error3" style="display: none"> </span>
+
+
+            <label>{{ trans('language_changer.price_per_unit_time'),'('.trans('language_changer.minutes').')' }} </label> <span id="no_amount_error3" style="display: none"> </span>
             <input type="text" class="form-control" onkeypress="return Isamount(event, 3);" placeholder="{{ trans('language_changer.price_per_unit_time') }}" name="time_price" value="<?= $price_per_unit_time ?>">
         </div>
         <div class="form-group col-md-6 col-sm-6">

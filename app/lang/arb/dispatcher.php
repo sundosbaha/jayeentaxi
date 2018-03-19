@@ -1,7 +1,7 @@
 <?php
 return array(
 
-    'dispatcher' => 'AloBasha',
+    'dispatcher' => 'Jayeen Taxi',
    'tracking'  => 'ملاحقة',
    'booking' => 'الحجز',
    'users' => 'المستخدمين',

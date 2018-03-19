@@ -464,7 +464,7 @@ $promo = $promocash = $promocard = 0;
                             </div>
                             <?php
                         } else if ($setting->key == 'service_fee') {
-                            if (Config::get('app.generic_keywords.Currency') == '$') {
+                           // if (Config::get('app.generic_keywords.Currency') == '$') {
                                 ?>
                                 <div class="form-group">
                                     <label><?php
@@ -484,7 +484,7 @@ $promo = $promocash = $promocard = 0;
                                     <input class="form-control" type="text" name="<?php echo $setting->id; ?>" value="<?php echo $setting->value; ?>" onkeypress="return Isamount(event,<?php echo $counter; ?>);" >
                                 </div>                        
                                 <?php
-                            }
+                            //}
                         } else {
                             ?>
                             <div class="form-group">

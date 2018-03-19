@@ -68,6 +68,13 @@
                                 echo "selected";
                             }
                             ?>>Japan Yen</option>
+
+                            <option value="JOD" <?php
+                                    if (Config::get('app.generic_keywords.Currency') == 'JOD') {
+                                        echo "selected";
+                                    }
+                                    ?>>Jordan Dinar</option>
+
                             <option value="MXN" <?php
                             if (Config::get('app.generic_keywords.Currency') == 'MXN') {
                                 echo "selected";
@@ -113,6 +120,8 @@
                                 echo "selected";
                             }
                             ?>>South Africa Rand</option>
+
+
 
                         </select>
                     </div>

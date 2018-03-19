@@ -2,6 +2,9 @@
 return array(
     's'=>' ',
     'map'=>'maps',
+    'online'=>'online',
+    'offline'=>'offline',
+    'make'=>'Make',
     'text_format' =>'ltr',
     'Dashboard' => 'Dashboard',
     'map_view' => 'Map view',
@@ -77,6 +80,7 @@ return array(
     'charge'=>'Charge',
     'now'=>'Now',
     'please_enter_your_address'=>'Please enter your address',
+    'please_enter_your_email_id'=>'Please enter your Email Id',
     'find_location' => 'Find Location',
     'sort'=>'Sort',
     'sorted_by'=>'Sorted By',
@@ -149,6 +153,7 @@ return array(
     'space'=>'Space',
     'visibility'=>'Visibility',
     'in_us_dollar'=>'in US Dollar',
+    'minutes'=>'Minutes',
     'size'=>'Size',
     'set_as_default'=>'Set as Default',
     'add_promo_code'=>'Add Promo Code',
@@ -176,6 +181,7 @@ return array(
     'uses_allowed'=>'Uses Allowed',
     'mode'=>'Mode',
     'booking'=>'Booking',
+    'submit'=>'Submit',
     'walker'=>'Walker',
     'arrived'=>'Arrived',
     'yet_to_start'=>'Yet To Start',
@@ -209,6 +215,7 @@ return array(
     'ui'=>'UI',
     'previlege'=>'Previlege',
     'owner'=>'Owner',
+    'register'=>'Register',
     'ledger'=>'Ledger',
     'set_privilege'=>'Set Privilege',
     'basic_app_settings'=>'Basic App Settings',
@@ -217,6 +224,7 @@ return array(
     'yes'=>'Yes',
     'fixed_price'=>'Fixed Price',
     'km'=>'KM',
+    'place'=>'place',
     'sms_templates'=>'SMS Templates',
     'advance_settings'=>'Advance Settings',
     'automatic'=>'Automatic',
@@ -226,9 +234,11 @@ return array(
     'theme_settings'=>'Theme Settings',
     'logo'=>'Logo',
     'password'=>'Password',
+    'forget'=>'Forget',
     'confirm'=>'Confirm',
     'certification_of_registration'=>'Certification of Registration',
     'upload_image_format'=>'Please Upload image in jpg, png format',
+    'country_code_note'=>"Please add country code like \"91XXXXXXXXXX\" without \"+\" symbol",
     'login'=>'Login',
     'in'=>'in',
     'staff'=>'Staff',
@@ -266,6 +276,7 @@ return array(
     'gcm'=>'GCM',
     'select'=>'Select',
     'back_to_settings'=>'Back To Settings',
+    'back_to_driver'=>'Back To Driver',
     'web_dash_board'=>'Web Dashboard',
     'welcome_to'=>'Welcome To',
     'login_to_account'=>'Login to your account',
@@ -274,13 +285,22 @@ return array(
     'un_assigned'=>'Un Assigned',
     'no_record_found'=>'No Record Found',
     'invalid_username_or_password' => 'Invalid Username Or Password',
+    'invalid_user' => 'Invalid User',
     'image_format' => 'Please Upload image in jpg, png format',
     'wrong' => 'Sorry Something went Wrong',
     'ed'=>'ed',
     'and'=>'',
     'no_of_uses'=>'No of Uses',
-'page_not_found'=>'Page Not Found',
+    'page_not_found'=>'Page Not Found',
     'upcoming'=>'Upcoming',
+    
+    
+    /*API's */
+    'insufficient_balance_wallet'=>'Insufficient Balance In Wallet',
+    'please'=>'Please',
+     'collect_cash_from_client'=>'collect cash from client to this trip',
+     
+
 
     /*Setting Keywords*/
 
@@ -326,6 +346,22 @@ return array(
 
  'config_sms_gateway'=>'Please configure sms gateway first',
     'upload_icon_favicon'=>'Upload Icon Images only for Favicon',
+    'please_dont_leave_empty'=>"Please Don/'t leave search field as empty",
+    
+    'cannot_make_driver_offline'=>"Driver is on trip cannot make offline",
+    'driver_online_success'=>"Driver successfully Online",
+    'driver_offline_success'=>"Driver successfully offlined",
+
+    'you_are_offline'=>"Now you are in Offline",
+
+    'you_are_online'=>"Now you are in Online",
+
+    'email_already_exit'=>"Email id already Taken. Try another Email id",
+    'phone_already_exit'=>"Phone number already Taken. Try another Phone number",
+    'please_check_email_for_password'=>"Please Check your E-mail for New password",
+    'trip_mini_wallet_amount'=>"Wallet minimum amount for trip",
+    
+
 
 
     );

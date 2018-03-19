@@ -1,6 +1,6 @@
 
 <?php
-exec("curl http://productstaging.in/wallet/public/dispatch/cron_job");
+exec("curl http://productstaging.in/jayeentaxi/public/dispatch/cron_job");
 ?>
 
 

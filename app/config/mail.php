@@ -54,7 +54,7 @@ return array(
     |
     */
 
-    'from' => array('address' => 'admin@alobasha.com', 'name' => 'Alobasha'),
+    'from' => array('address' => 'admin@jayeentaxi.com', 'name' => 'Jayeen Taxi'),
 
     /*
     |--------------------------------------------------------------------------

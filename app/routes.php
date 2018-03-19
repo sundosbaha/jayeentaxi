@@ -27,6 +27,8 @@ Route::get('/system_command_zip','SystemController@system_command_zip');
 Route::get('/package_installer', 'AdminController@package_installer');
 Route::post('/package_installer', 'AdminController@package_installer1');
 
+Route::post('/user/eta_calculation', array('as' => 'etacalc', 'uses' => 'OwnerController@eta_calculation'));
+
 Route::get('/test', 'HelloController@test');
 
 Route::get('/push', 'ApplicationController@test_notifi');
@@ -94,6 +96,10 @@ Route::post('/user/addcardtoken', 'OwnerController@addcardtoken');
 
 Route::get('/user/braintreekey', 'OwnerController@get_braintree_token');
 
+Route::post('/user/add_money_to_wallet', 'OwnerController@add_money_to_wallet');
+
+Route::get('/user/wallet_amount_details', 'OwnerController@wallet_amount_details');
+
 Route::get('/user/list_favourite_place', 'OwnerController@list_favourite_place');
 
 Route::post('/user/add_favourite_place', 'OwnerController@add_favourite_place');
@@ -115,6 +121,8 @@ Route::any('/user/thing', 'DogController@create');
 Route::post('/user/updatething', 'DogController@update_thing');
 
 Route::post('/user/createrequest', 'DogController@create_request');
+
+Route::post('/dispatch/create_request', 'DispaController@create_request');
 
 //testing
 Route::post('/user/create_scheduled_request', 'DogController@createScheduled_request');
@@ -164,7 +172,10 @@ Route::post('/user/referral', 'OwnerController@set_referral_code');
 Route::get('/user/referral', 'OwnerController@get_referral_code');
 
 Route::post('/user/apply-referral', 'OwnerController@apply_referral_code');
+
 Route::post('/user/apply-promo', 'OwnerController@apply_promo_code');
+
+Route::post('/user/apply-promo_previously', 'OwnerController@apply_promo_code_previously');
 
 Route::get('/user/cards', 'OwnerController@get_cards');
 
@@ -263,6 +274,9 @@ Route::get('/application/pages', 'ApplicationController@pages');
 
 Route::get('/application/types', 'ApplicationController@types');
 
+Route::get('/application/zonetypes', 'ApplicationController@zonetypes');
+
+
 Route::post('/application/alltypes', 'ApplicationController@all_types');
 
 Route::get('/application/page/{id}', 'ApplicationController@get_page');
@@ -357,7 +371,12 @@ Route::get('/admin/provider/requests/{id}', array('as' => 'AdminProviderRequests
 
 Route::get('/admin/provider/decline/{id}', array('as' => 'AdminProviderDecline', 'uses' => 'AdminController@decline_walker'));
 
+Route::get('/admin/provider/state_change/{id}', array('as' => 'AdminProviderStateChange', 'uses' => 'AdminController@walker_state_change'));
+
 Route::get('/admin/provider/delete/{id}', array('as' => 'AdminProviderDelete', 'uses' => 'AdminController@delete_walker'));
+
+//Route::get('/admin/provider/trip_earnings/{id}', array('as' => 'AdminProviderTripEarnings', 'uses' => 'AdminController@walker_trip_earnings'));
+Route::get('/admin/provider/trip_earnings/{id}', array('as' => 'AdminProviderTripEarnings', 'uses' => 'AdminController@walker_trip_earnings'));
 
 Route::get('/admin/provider/approve/{id}', array('as' => 'AdminProviderApprove', 'uses' => 'AdminController@approve_walker'));
 
@@ -367,6 +386,8 @@ Route::get('/admin/provider/available/{id}', array('as' => 'AdminProviderAvailab
 //testing
 
 Route::get('/admin/providers_xml', array('as' => 'AdminProviderXml', 'uses' => 'AdminController@walkers_xml'));
+
+Route::post('/admin/forget_password', array('as' => 'AdminForgetPassword', 'uses' => 'AdminController@forget_admin_password'));
 
 
 Route::get('/admin/user/delete/{id}', array('as' => 'AdminDeleteUser', 'uses' => 'AdminController@delete_owner'));
@@ -407,7 +428,7 @@ Route::post('/admin/theme', array('as' => 'AdminTheme', 'uses' => 'AdminControll
 
 Route::post('/admin/settings', array('as' => 'AdminSettingsSave', 'uses' => 'AdminController@save_settings'));
 
-Route::get('/admin/emails', array('as' => 'AdminEmails', 'uses' => 'AdminController@email_views'));
+
 
 Route::get('/admin/informations', array('as' => 'AdminInformations', 'uses' => 'AdminController@get_info_pages'));
 
@@ -622,7 +643,11 @@ Route::post('/dispatch/statustrip', array('as' => 'DispatchStatustrip', 'uses' =
 
 Route::post('/dispatch/schedule', array('as' => 'DispatchSchedule', 'uses' => 'DispaController@schedule_trip'));
 
+Route::post('/dispatch/getdriver', array('as' => 'DispatchGetDriver', 'uses' => 'DispaController@get_driver'));
+
 Route::get('/dispatch/schedule_view', array('as' => 'DispatchScheduleview', 'uses' => 'DispaController@schedule_view'));
+
+///Route::post('/dispatch/createtrip', array('as' => 'DispatchCreatetrip', 'uses' => 'DispaController@create_trip'));
 
 Route::post('/dispatch/dispatch_eta', array('as' => 'Dispatcheta', 'uses' => 'DispaController@eta_type'));
 
@@ -641,6 +666,10 @@ Route::get('/dispatch/setting', array('as' => 'Dispatchsetting', 'uses' => 'Disp
 Route::get('/dispatch/logout', array('as' => 'Dispatchlogout', 'uses' => 'DispaController@logout'));
 
 Route::get('/dispatch/cron_job', array('as' => 'Dispatchlogout', 'uses' => 'DispaController@cron_job_schdule'));
+
+Route::get('/dispatch/cron_offline_drivers', array('as' => 'DispatchCronOfflineDrivers', 'uses' => 'DispaController@cron_offline_drivers'));
+
+Route::get('/dispatch/manual_create_trip', array('as' => 'DispatchManualCreateTrip', 'uses' => 'DispaController@manual_testing'));
 //dispatcher
 
 
@@ -828,6 +857,7 @@ Route::post('/admin/document_image_update', array('as' => 'DocumentImageUpdate',
 Route::get('/admin/document-image/edit/{id}', array('as' => 'AdminImageTypesEdit', 'uses' => 'AdminController@edit_image_type'));
 
 Route::post('/admin/document-image/update', array('as' => 'AdminImageTypesUpdate', 'uses' => 'AdminController@update_image_type'));
+
 
 
 //Bank Accounts

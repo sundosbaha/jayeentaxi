@@ -36,7 +36,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#6A6B60', end
   padding-bottom: 15px;  
   top: -15px;
   position: relative;
-  width: 261px;    height: 239px;
+  width: 261px;    height: auto;
     background: #fff;
 box-shadow: 0 0 18px #ccc;
 }

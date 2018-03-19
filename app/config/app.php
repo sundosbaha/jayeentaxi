@@ -13,7 +13,7 @@ return array(
     |
     */
 
-    'debug' => True,
+    'debug' => TRUE,
 
     /*
     |--------------------------------------------------------------------------
@@ -40,6 +40,7 @@ return array(
     */
 
     'timezone' => 'Asia/Kolkata',
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
@@ -50,6 +51,7 @@ return array(
     | to any of the locales which will be supported by the application.
     |
     */
+
         'locale' => 'en',
                            
                                                       
@@ -61,17 +63,84 @@ return array(
                                                       
                                                       
                                                       
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
+                                                      
                            
-      /*
-      |--------------------------------------------------------------------------
-      | Application Locale Configuration
-      |--------------------------------------------------------------------------
-      |
-      | The application locale determines the default locale that will be used
-      | by the translation service provider. You are free to set this value
-      | to any of the locales which will be supported by the application.
-      |
-      */
+    /*
+    |--------------------------------------------------------------------------
+    | Application Fallback Locale
+    |--------------------------------------------------------------------------
+    |
+    | The fallback locale determines the locale to use when the current one
+    | is not available. You may change the value to correspond to any of
+    | the language folders that are provided through your application.
+    |
+    */
 
     'fallback_locale' => 'en',
 
@@ -230,7 +299,7 @@ return array(
         'User' => 'User',
         'Services' => 'Taxi',
         'Trip' => 'Trip',
-        'Currency' => '$',
+        'Currency' => 'JOD',
         'total_trip' => '1',
         'cancelled_trip' => '4',
         'total_payment' => '5',
@@ -245,14 +314,14 @@ return array(
     'provider_certy_url' => 'http://192.168.0.26/uberforx_new/api/public/apps/ios_push/walker/iph_cert/Walker_certy.pem',
     'provider_certy_pass' => '123456',
     'provider_certy_type' => '0',
-    'gcm_browser_key' => 'AIzaSyDqThKm_S8AVL6OwtHACa59t4cIi6GwoB8',
+    'gcm_browser_key' => 'AIzaSyAXatDcDqW3hERFA-zpeX86juvvWQr8ycM',
     /* DEVICE PUSH NOTIFICATION DETAILS END */
-    'currency_symb' => '#', 
+    'currency_symb' => 'JOD', 
     
     /* Developer Company Details */
     'developer_company_name' => '',
     'developer_company_web_link' => '', 
-    'developer_company_email' => 'admin@alobasha.com', 
+    'developer_company_email' => 'admin@jayeentaxi.com', 
     'developer_company_fb_link' => '#', 
     'developer_company_twitter_link' => '#',
     /* Developer Company Details END */
@@ -268,7 +337,7 @@ return array(
     'data_not_available' => 'Data not availalbe.', 
     'blank_fiend_val' => 'N/A',
 
-    'website_title' => 'AloBasha',
+    'website_title' => 'Jayeen Taxi',
     'referral_prefix' => 'TNN',
     'referral_zero_len' => 10,
     'website_meta_description' => '',
@@ -277,9 +346,9 @@ return array(
 
     's3_bucket' => '',
 
-    'twillo_account_sid' => 'AC75a5048afaf14beaafec1a8c9e92e766',
-    'twillo_auth_token' => '593428c6385f7cca8fcfdcb18186fb85',
-    'twillo_number' => '+12562779152',
+    'twillo_account_sid' => 'AC7f844250d0947d120750ec87df0c5b2f',
+    'twillo_auth_token' => '69c494cfc69bbde15030be6700862dc7',
+    'twillo_number' => '+14847256990',
 
     'production' => false,
 

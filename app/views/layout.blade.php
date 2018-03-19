@@ -275,6 +275,18 @@ $urll=$url=DB::table('privilege')
                                     <span>{{trans('language_changer.zonedivision'); }}</span></a>
                             </li>
                             <?php }} ?>
+
+                        <?php   if(!inarray('providerRegister', $urll)) {?>
+                            <li id="provider_register" title="Add Driver" dir="{{ trans('language_changer.text_format'); }}">
+                                <a  href="{{ URL::Route('providerRegister') }}"><i class="fa fa-taxi"></i> <span>{{trans('customize.add_driver'); }}</span></a>
+                            </li>
+                        <?php }  ?>
+
+                        <?php if(!inarray('userRegister', $urll)) {?>
+                            <li id="user_register" title="Add User" dir="{{ trans('language_changer.text_format'); }}">
+                                <a  href="{{ URL::Route('userRegister') }}"><i class="fa fa-user"></i> <span>{{trans('customize.add_user'); }}</span></a>
+                            </li>
+                        <?php } ?>
                             <!--
                             <?php  /* if(!inarray('providerRegister', $urll)) {?>
                             <li id="add_driver" title="Add Driver">
@@ -399,6 +411,9 @@ $urll=$url=DB::table('privilege')
                         </li>
                         <?php } ?>
 
+
+
+
                      <!--  {{-- <?php if(!inarray('listusers', $urll)) {?>
                         <li id="privilege" title="Dashboard" dir="{{ trans('language_changer.text_format'); }}">
                             <a  href="{{ URL::Route('listusers') }}"><i class="fa fa-dashboard"></i> <span>{{trans('customize.privilege'); }}</span></a>
@@ -412,6 +427,20 @@ $urll=$url=DB::table('privilege')
                                 <span>{{trans('customize.zonedivision'); }}</span></a>
                         </li>
                     <?php }} ?>
+
+                        <?php   if(!inarray('providerRegister', $urll)) {?>
+                            <li id="provider_register" title="Add Driver" dir="{{ trans('language_changer.text_format'); }}">
+                                <a  href="{{ URL::Route('providerRegister') }}"><i class="fa fa-taxi"></i> <span>{{trans('customize.add_driver'); }}</span></a>
+                            </li>
+                        <?php }  ?>
+
+                        <?php if(!inarray('userRegister', $urll)) {?>
+                            <li id="user_register" title="Add User" dir="{{ trans('language_changer.text_format'); }}">
+                                <a  href="{{ URL::Route('userRegister') }}"><i class="fa fa-user"></i> <span>{{trans('customize.add_user'); }}</span></a>
+                            </li>
+                        <?php } ?>
+
+
                     <!--
                             <?php  /* if(!inarray('providerRegister', $urll)) {?>
                             <li id="add_driver" title="Add Driver">

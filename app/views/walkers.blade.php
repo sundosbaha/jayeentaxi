@@ -8,9 +8,25 @@
         <br/>
     </div>
 </div>-->
-@if (Session::has('message'))
-<div class="alert alert-danger">{{ Session::get('message') }}</div>
-@endif
+
+<?php if(Session::has('message') && !empty(Session::get('message')) ){
+
+
+
+?>
+    <div class="alert {{ Session::get('alert_type') }}">{{ Session::get('message') }}</div>
+<?php
+        Session::put('message','');
+        Session::put('alert_type','');
+
+} ?>
+
+
+<?php
+        $provider_type=DB::table("walker_type")->select('id',"name")->get();
+?>
+
+
 
 <div class="col-md-6 col-sm-12">
     <div class="box box-danger">
@@ -36,6 +52,7 @@
                             echo 'selected="selected"';
                         }
                         ?> id="pvemail">{{ trans('language_changer.Provider'),' ',trans('language_changer.email') }}</option>
+
                         <option value="pvaddress" <?php
                         if (isset($_GET['type']) && $_GET['type'] == 'pvaddress') {
                             echo 'selected="selected"';
@@ -79,7 +96,7 @@
             <div class="box-body row" dir="{{ trans('language_changer.text_format') }}">
 
                 <div class="col-md-6 col-sm-12" style="float:<?php echo $align_format; ?>">
-                    <select class="form-control" id="sortdrop" name="filter_type" >
+                    <select class="form-control sortdrop" id="searchdrop" name="filter_type" >
                         <option value="provid" <?php
                         if (isset($_GET['filter_type']) && $_GET['filter_type'] == 'provid') {
                             echo 'selected="selected"';
@@ -95,6 +112,19 @@
                             echo 'selected="selected"';
                         }
                         ?> id="pvemail">{{ trans('language_changer.Provider'),' ',trans('language_changer.email') }}</option>
+
+                        <option value="pvphone" <?php
+                        if (isset($_GET['filter_type']) && $_GET['filter_type'] == 'pvphone') {
+                            echo 'selected="selected"';
+                        }
+                        ?> id="pvphone">{{ trans('language_changer.Provider'),' ',trans('language_changer.phone') }}</option>
+
+                         <option value="pvtype" <?php
+                        if (isset($_GET['filter_type']) && $_GET['filter_type'] == 'pvtype') {
+                            echo 'selected="selected"';
+                        }
+                        ?> id="pvtype">{{ trans('language_changer.Provider'),' ',trans('language_changer.type') }}</option>
+
                         <option value="pvaddress" <?php
                         if (isset($_GET['filter_type']) && $_GET['filter_type'] == 'pvaddress') {
                             echo 'selected="selected"';
@@ -103,18 +133,96 @@
                     </select>
                     <br>
                 </div>
-                <div class="col-md-6 col-sm-12" >
-                    <input class="form-control" type="text" name="filter_valu" value="<?php echo (!empty($_GET['filter_valu']) ? $_GET['filter_valu'] : '');
-                    ?>" id="insearch" placeholder="{{ trans('language_changer.keyword') }}"/>
+
+
+
+                <?php
+                if (isset($_GET['filter_type']) && $_GET['filter_type'] != 'pvtype') {?>
+
+                <div class="col-md-6 col-sm-12" id="serchbox">
+                    <input class="form-control" type="text" name="filter_valu" value="<?php
+                    echo (!empty($_GET['filter_valu']) ? $_GET['filter_valu'] : '');
+
+                    ?>" id="insearch" placeholder="keyword"/>
                     <br>
                 </div>
+
+
+
+                <div class="col-md-6 col-sm-12" id="type_search" style="display: none;">
+                    <select class="form-control" id="pvtype1" name="filter_valu" disabled>
+                        <option value="">{{ trans('language_changer.select'),' ',trans('language_changer.type') }}</option>
+                        <?php foreach($provider_type as $pt){ ?>
+                        <option value="<?php echo $pt->id ?>"
+                                <?php if (isset($_GET['filter_type']) && $_GET['filter_type'] == 'pvtype') {
+                                    echo 'selected="selected"';
+                                }
+                                ?>
+                                class="company_valu" > <?php echo $pt->name ?></option>
+                        <?php } ?>
+                    </select>
+                    <br>
+                </div>
+
+                <?php } else if(isset($_GET['filter_type']) && $_GET['filter_type'] == 'pvtype') { ?>
+
+
+                <div class="col-md-6 col-sm-12" id="serchbox" style="display : none;" >
+                    <input disabled class="form-control" type="text" name="filter_valu" value="" id="insearch" placeholder="keyword"/>
+                    <br>
+                </div>
+
+                <div class="col-md-6 col-sm-12" id="type_search">
+                    <select class="form-control" id="pvtype1" name="filter_valu">
+                        <option value="">{{ trans('language_changer.select'),' ',trans('language_changer.type') }}</option>
+                        <?php foreach($provider_type as $pt){ ?>
+                        <option value="<?php echo $pt->id ?>"
+                                <?php if (isset($_GET['filter_valu']) && $_GET['filter_valu'] == $pt->id ) {
+                                    echo 'selected="selected"';
+                                }
+                                ?>
+                                class="company_valu" > <?php echo $pt->name ?></option>
+                        <?php } ?>
+                    </select>
+                    <br>
+                </div>
+
+                <?php } else{?>
+
+                <div class="col-md-6 col-sm-12" id="serchbox">
+                    <input class="form-control" type="text" name="filter_valu" value="<?php
+                    echo (!empty($_GET['filter_valu']) ? $_GET['filter_valu'] : '');
+
+                    ?>" id="insearch" placeholder="keyword"/>
+                    <br>
+                </div>
+
+
+
+                <div class="col-md-6 col-sm-12" id="type_search" style="display: none;">
+                    <select class="form-control" id="pvtype1" name="filter_valu" disabled>
+                        <option value="">{{ trans('language_changer.select'),' ',trans('language_changer.type') }}</option>
+                        <?php foreach($provider_type as $pt){ ?>
+                        <option value="<?php echo $pt->id ?>"
+                                <?php if (isset($_GET['filter_type']) && $_GET['filter_type'] == 'pvtype') {
+                                    echo 'selected="selected"';
+                                }
+                                ?>
+                                class="company_valu" > <?php echo $pt->name ?></option>
+                        <?php } ?>
+                    </select>
+                    <br>
+                </div>
+
+
+                <?php } ?>
 
             </div>
 
             <div class="box-footer" >
 
-                <button  type="submit" id="btnsearch" style="float:<?php echo $align_format; ?>" class="btn btn-flat btn-block btn-success">{{ trans('language_changer.search') }}</button>
-                <button type="submit" id="btnsearch" name="submit" class="btn btn-flat btn-block btn-success" value="Download_Report">{{ trans('language_changer.download'),' ',trans('language_changer.report') }}</button>
+                <button  type="submit" id="btnsearch" style="float:<?php echo $align_format; ?>" class="btn btn-flat btn-block btn-success btnsearch">{{ trans('language_changer.search') }}</button>
+                <button type="submit" id="btnsearch" name="submit" class="btn btn-flat btn-block btn-success btnsearch" value="Download_Report">{{ trans('language_changer.download'),' ',trans('language_changer.report') }}</button>
             </div>
         </form>
 
@@ -122,12 +230,20 @@
 </div>
 <div class="col-md-12 col-sm-12">
     <?php if (Session::get('che')) { ?>
-        <a id="providers" href="{{ URL::Route('AdminProviders') }}"><button class="col-md-12 col-sm-12 btn btn-warning" type="button"> {{trans('language_changer.Provider').' '. trans('language_changer.Provider').' '.trans('language_changer.s');}}</button></a><br/>
+        <a id="providers" href="{{ URL::Route('AdminProviders') }}"><button class="col-md-12 col-sm-12 btn btn-warning" type="button"> {{trans('language_changer.Provider').' '.trans('language_changer.s');}}</button></a><br/>
     <?php } else { ?>
-        <a id="currently" href="{{ URL::Route('AdminProviderCurrent') }}"><button class="col-md-12 col-sm-12 btn btn-flat btn-block  btn-warning"  type="button">{{ trans('language_changer.currently_providing') }}</button></a><br/>
-    <?php } ?>
-    <br><br>
+        <a id="currently" href="{{ URL::Route('AdminProviderCurrent') }}"><button class="col-md-12 col-sm-12 btn btn-flat btn-block  btn-warning"  type="button">{{ trans('language_changer.currently_providing') }}</button></a>
+        <a id="currently" href="{{ URL::Route('DriverEarnings') }}"><button class="col-md-12 col-sm-12 btn btn-flat btn-block  btn-warning" style="margin-left: 20px;" type="button">{{ trans('language_changer.driver_earnings') }}</button></a>
+        <?php } ?>
+
+
+        <br><br>
 </div>
+
+
+
+
+
 <div class="box box-info tbl-box">
     <div align="left" id="paglink"><?php echo $walkers->appends(array('type' => Session::get('type'), 'valu' => Session::get('valu')))->links(); ?></div>
     <table class="table table-bordered" dir="{{ trans('language_changer.text_format') }}">
@@ -194,9 +310,22 @@
 
                                 <?php if ($walker->is_approved == 0) { ?>
                                     <li role="presentation"><a role="menuitem" id="approve" tabindex="-1" href="{{ URL::Route('AdminProviderApprove', $walker->id) }}">{{ trans('language_changer.approve') }}</a></li>
+
+
                                 <?php } else { ?>
-                                    <li role="presentation"><a role="menuitem" id="decline" tabindex="-1" href="{{ URL::Route('AdminProviderDecline', $walker->id) }}">{{ trans('language_changer.decline') }}</a></li>
+
+                                <?php if($walker->is_active ==0 ){      ?>
+
+                                <li role="presentation"><a role="menuitem" id="approve" tabindex="-1" href="{{ URL::Route('AdminProviderStateChange', $walker->id) }}">{{ trans('language_changer.online') }}</a></li>
+
+                                <?php }else{      ?>
+                                <li role="presentation"><a role="menuitem" id="approve" tabindex="-1" href="{{ URL::Route('AdminProviderStateChange', $walker->id) }}">{{ trans('language_changer.offline') }}</a></li>
+                                <?php } ?>
+
+
+                                <li role="presentation"><a role="menuitem" id="decline" tabindex="-1" href="{{ URL::Route('AdminProviderDecline', $walker->id) }}">{{ trans('language_changer.decline') }}</a></li>
                                     <li role="presentation"><a role="menuitem" id="decline" tabindex="-1" href="{{ URL::Route('AdminProviderDelete', $walker->id) }}">{{ trans('language_changer.delete') }}</a></li>
+                                <!--    <li role="presentation"><a role="menuitem" id="earnings" tabindex="-1" href="{{ URL::Route('DriverEarnings', $walker->id) }}">{{ trans('language_changer.driver_earnings') }}</a></li>-->
 
                                 <?php } ?>
                                 <?php
@@ -205,14 +334,15 @@
                                 ?>
                                 <!--<li role="presentation"><a role="menuitem" id="avail" tabindex="-1" href="{{ URL::Route('AdminProviderAvailability', $walker->id) }}">View Calendar</a></li>-->
                                 <?php /* } */ ?>
-                                <?php
+
+                              <!-- {{-- <?php
                                 $walker_doc = WalkerDocument::where('walker_id', $walker->id)->first();
                                 if ($walker_doc != NULL) {
                                     ?>
                                     <li role="presentation"><a id="view_walker_doc" role="menuitem" tabindex="-1" href="{{ URL::Route('AdminViewProviderDoc', $walker->id) }}">{{ trans('view'),' ',trans('documents') }}</a></li>
                                 <?php } else { ?>
                                     <li role="presentation"><a id="view_walker_doc" role="menuitem" tabindex="-1" href="#"><span class='badge bg-red'>{{ trans('language_changer.no'),' ',trans('language_changer.documents') }}</span></a></li>
-                                <?php } ?>
+                                <?php } ?>--}}-->
                                 <!--<li role="presentation"><a role="menuitem" id="history" tabindex="-1" href="{{ web_url().'/admin/provider/documents/'.$walker->id }}">View Documents</a></li>-->
                             </ul>
                         </div>
@@ -225,9 +355,61 @@
 
 
 
+<script type="text/javascript">
+/*
+
+    $(".btnsearch").click(function(){
+       var search=$("#insearch").val();
+       var msg= "<?php echo trans('language_changer.') ?>"
+
+        if(str.length(search) < 0){
+    alert();
+        }
+
+    });*/
+
+/*
+
+$("#searchdrop").click(function(){
+
+
+});
+
+*/
+
+$(document).ready(function(){
+
+    $('#searchdrop').click(function(){
+
+        var type=$(this).val();
+        if(type=='pvtype'){
+            $('#serchbox').hide();
+            $('#type_search').show();
+            $( "#insearch" ).prop( "disabled", true );
+            $( "#pvtype1" ).prop( "disabled", false );
+        }
+        else{
+            $('#serchbox').show();
+            $('#type_search').hide();
+            $( "#insearch" ).prop( "disabled", false );
+            $( "#pvtype1" ).prop( "disabled", true );
+
+        }
+    });
+
+});
+
+
+
+
+</script>
+
+
 @stop
 
 <style type="text/css">
+
+
 
     #btnsort {
         width: 49% !important;

@@ -17,7 +17,7 @@
 <body class="loaded">
 
 
-<nav class="navbar navbar-inverse" style="background:#e03129;border-color:white;">
+<nav class="navbar navbar-inverse" style="background:#76ad1c;border-color:white;">
   <div class="container-fluid">
     <div class="navbar-header">
       <a class="navbar-brand" style="color:white;" href="#"><?php echo Lang::get('dispatcher.dispatcher'); ?></a>

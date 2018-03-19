@@ -3,7 +3,15 @@
 
 @section('content')
 
-<div class="box box-primary">
+    <?php
+/*echo "<pre>";
+    print_r($owner);
+            die("x");*/
+
+    ?>
+
+
+<div class="box box-primary" dir="{{ trans('language_changer.text_format') }}">
               
                                 <!-- form start -->
                                <form method="post" id="main-form" action="{{ URL::Route('AdminUserUpdate') }}"  enctype="multipart/form-data">
@@ -24,26 +32,24 @@
                                 
                                         </div>
 
-                                      <!--   <div class="form-group">
-                                            <label>Email</label>
-                                            <input class="form-control" type="email" name="email" value="<?php //$owner->email 
-											?>" placeholder="Email">
+                                      <div class="form-group">
+                                            <label>{{ trans('language_changer.email')}}</label>
+                                            <input class="form-control" type="email" name="email" value="<?= $owner->email ?>" placeholder="{{ trans('language_changer.email')}}" >
 
                                 
                                         </div>
 
                                          <div class="form-group">
-                                            <label>Phone</label>
-                                            <input class="form-control" type="text" name="phone" value="<?php //$owner->phone 
-											?>" placeholder="Phone">
-
+                                            <label>{{ trans('language_changer.phone')}}</label>
+                                            <input class="form-control" type="text" maxlength="15" name="phone" value="<?php $pno= preg_replace('/[^A-Za-z0-9\-]/', '', $owner->phone);echo $pno; ?>" placeholder="{{ trans('language_changer.phone')}}">
+                                             <p class="help-block">{{ trans('language_changer.country_code_note') }}</p>
                                 
-                                        </div>-->
+                                        </div>
 
 
                                          <div class="form-group">
                                             <label>{{ trans('language_changer.address')}}</label>
-                                            <input class="form-control" type="text" name="address" value="<?= $owner->address ?>" placeholder="{{ trans('language_changer.address')}}">
+                                            <input class="form-control" type="text" name="address" id="address" value="<?= $owner->address ?>" placeholder="{{ trans('language_changer.address')}}" >
 
 
                                         </div>
@@ -51,7 +57,7 @@
 
                                          <div class="form-group">
                                             <label>{{ trans('language_changer.state')}}</label>
-                                            <input class="form-control" type="text" name="state" value="<?= $owner->state ?>" placeholder="{{ trans('language_changer.state')}}">
+                                            <input class="form-control" type="text" name="state" id="state" value="<?= $owner->state ?>" placeholder="{{ trans('language_changer.state')}}">
 
                                         </div>
 
@@ -59,11 +65,17 @@
 
                                         <div class="form-group">
                                             <label>{{ trans('language_changer.zip_Code')}}</label>
-                                            <input class="form-control" type="text" name="zipcode" value="<?= $owner->zipcode ?>" placeholder="{{ trans('language_changer.zip_Code')}}">
+                                            <input class="form-control" type="text" name="zipcode" id="zipcode" value="<?= $owner->zipcode ?>" placeholder="{{ trans('language_changer.zip_Code')}}">
 
                                         </div>
 
-
+                                        <div class="form-group">
+                                            <label>{{ trans('language_changer.profile'),' ',trans('language_changer.image') }}</label>
+                                            <input class="form-control" type="file" name="image" >
+                                            <br>
+                                            <img src="<?= $owner->picture; ?>" height="50" width="50"><br>
+                                            <p class="help-block">{{ trans('language_changer.image_format') }}</p>
+                                        </div>
                                    
                                     </div><!-- /.box-body -->
 
@@ -77,6 +89,7 @@
 
 
 <?php
+        if(isset($success)){
 if($success == 1) { ?>
 <script type="text/javascript">
     var msg="{{ trans('language_changer.owner'),' ',trans('language_changer.profile'),' ',trans('language_changer.update'),' ',trans('language_changer.successfully') }}";
@@ -90,22 +103,59 @@ if($success == 2) { ?>
     alert(msg);
 </script>
 <?php } ?>
+<?php
+if($success == 3) { ?>
+    <script type="text/javascript">
+        var msg="Please Upload image as Jpeg or png"
+        alert(msg);
+    </script>
+    <?php }
+
+    ?>
+    <?php
+    if($success == 4) { ?>
+    <script type="text/javascript">
+        var msg="{{ trans('language_changer.email_already_exit') }}";
+        alert(msg);
+    </script>
+    <?php } ?>
+    <?php
+    if($success == 5) { ?>
+    <script type="text/javascript">
+        var msg="{{ trans('language_changer.phone_already_exit') }}";
+        alert(msg);
+    </script>
+    <?php }
+
+    }?>
+
+
+
+
+
+
+
 
 <script type="text/javascript">
 $("#main-form").validate({
   rules: {
     first_name: "required",
     last_name: "required",
+    address: "required",
+    state: "required",
 
-    email: {
-      required: true,
-      email: true
+    zipcode: {
+        required: true,
+       number: true,
     },
-
-   phone: {
-    required: true,
-    digits: true,
-  }
+      phone: {
+        required: true,
+       number: true,
+    },
+      email: {
+          required: true,
+          email: true,
+    },
 
 
   }

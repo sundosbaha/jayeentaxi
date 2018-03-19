@@ -100,6 +100,12 @@
                                     echo 'selected="selected"';
                                 }
                                 ?>>{{ trans('language_changer.User'),' ',trans('language_changer.email')}}</option>
+                        <option value="userphone" id="userphone" <?php
+                                if (isset($_GET['filter_type']) && $_GET['filter_type'] == 'userphone') {
+                                    echo 'selected="selected"';
+                                }
+                                ?>>{{ trans('language_changer.User'),' ',trans('language_changer.phone')}}</option>
+
                         <option value="useraddress" id="useraddress" <?php
                                 if (isset($_GET['filter_type']) && $_GET['filter_type'] == 'useraddress') {
                                     echo 'selected="selected"';

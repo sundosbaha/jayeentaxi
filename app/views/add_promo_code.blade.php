@@ -23,11 +23,11 @@
             <div class="form-group col-md-6 col-sm-6">
                 <label>{{ trans('language_changer.promo_code'),' ',trans('language_changer.value') }}</label>
                 <span id="no_amount_error1" style="display: none"></span>
-                <input class="form-control" type="text" name="code_value" value="" placeholder="{{ trans('language_changer.promo_code'),' ',trans('language_changer.value') }}" onkeypress="return Isamount(event, 1);">
+                <input class="form-control" type="text"  id="code_value" name="code_value" value="" placeholder="{{ trans('language_changer.promo_code'),' ',trans('language_changer.value') }}" onkeypress="return Isamount(event, 1);">
             </div>
             <div class="form-group col-md-6 col-sm-6">
                 <label>{{ trans('language_changer.promo_code'),' ',trans('language_changer.type') }}</label>
-                <select name="code_type" class="form-control">
+                <select name="code_type" id="code_type" class="form-control">
                     <option value="1">{{ trans('language_changer.percent')}}</option>
                     <option value="2">{{ trans('language_changer.absolute')}}</option>
                 </select>
@@ -63,6 +63,33 @@
         </div>
     </form>
 </div>
+
+
+
+<script type="text/javascript">
+
+    $('#form').submit(function(e){
+
+        if($('#code_type').val() == '1')
+
+        //alert($('#code_type').val());
+        {
+            if($('#code_value').val() > 100)
+            {
+                $('#code_value').val('');
+                $('#code_value').focus();
+                alert('Percentage is only upto 100');
+                return false;
+            }
+        }
+        return true;
+    })
+
+
+
+</script>
+
+
 <script type="text/javascript">
     $("#form").validate({
         rules: {
@@ -74,6 +101,12 @@
     });
 
 </script>
+<script>
+
+
+
+</script>
+
 
 <script type="text/javascript">
 

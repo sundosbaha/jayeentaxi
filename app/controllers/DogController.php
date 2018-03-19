@@ -1150,11 +1150,17 @@ class DogController extends BaseController
 
                         . "from walker "
 
-                        . "where is_available = 1 and "
+                        . "where walker.is_available = 1 and "
 
-                        . "is_active = 1 and "
+                        . "walker.is_active = 1 and "
 
-                        . "is_approved = 1 and "
+                        . "walker.is_approved = 1 and "
+
+                       /* . "walker.latitude !=0 and "
+
+                        . "walker.longitude !=0 and "*/
+
+                        . "walker.deleted_at Is Null  and "
 
                         . "ROUND((" . $multiply . " * 3956 * acos( cos( radians('$latitude') ) * "
 
@@ -1171,8 +1177,10 @@ class DogController extends BaseController
 
                     $walkers = DB::select(DB::raw($query));
 
+                   /* print_r($walkers);
+                    die();*/
 
-                    $types = DB::table('walker_type')->where('is_visible', '=', 1)->get();
+                    $types = DB::table('walker_type')/*->where('is_visible', '=', 1)*/->get();
                     $p = 0;
 
                     $wa = 0;
@@ -4574,6 +4582,7 @@ class DogController extends BaseController
                                 //var_dump($result['id']);
                                 //exit;
 
+
                                 if (!empty($result['id'])) {
 
                                     $zone_id = $result['id'];
@@ -4592,6 +4601,10 @@ class DogController extends BaseController
                                 }
 
                             }
+
+
+
+                            
 
 
                             Log::info('out');
@@ -4616,6 +4629,7 @@ class DogController extends BaseController
                                 }
 
                             }
+                            
 
                             // Type based Multiple vechicle Type array generation
                             $vechicleTypes = array();
@@ -4726,15 +4740,24 @@ class DogController extends BaseController
 
                                 . "sin( radians(latitude) ) ) ) ,8) <= $distance and "
 
-                                . "walker.deleted_at IS NULL and "
+                                . "walker.type = $type  and "
 
-                                . "walker.id IN($typestring) "
+                                . "walker.deleted_at IS NULL "
+                     //           . "walker.deleted_at IS NULL and "
+
+//                                . "walker.id IN($typestring) "
 
                                 . "order by distance Limit 5";
                             //exit;
 
 
                             $walkers = DB::select(DB::raw($query));
+
+/*                            echo "<pre>";
+                            print_r($walkers);
+                            die("o");*/
+
+
 
                             $walker_list = array();
 
@@ -4770,6 +4793,50 @@ class DogController extends BaseController
                             $request->latitude = $latitude;
 
                             $request->longitude = $longitude;
+
+
+                            /*Check owner had promocode are not*/
+                            $settings = Settings::where('key', 'promotional_code_activation')->first();
+                            $prom_act = $settings->value;
+                            
+                            if($prom_act){
+                                $payment_mode = $payment_opt;
+                                if ($payment_mode == 0) {
+
+                                    $settings = Settings::where('key', 'get_promotional_profit_on_card_payment')->first();
+                                    $prom_act_card = $settings->value;
+
+                                    if($prom_act_card){
+                                        
+                                        $cheak_promocode=applyPromocode($owner_id,$request->id);
+
+                                    }
+
+                                }elseif($payment_mode == 1){
+
+                                    $settings = Settings::where('key', 'get_promotional_profit_on_cash_payment')->first();
+                                    $prom_act_cash = $settings->value;
+
+                                    if($prom_act_cash){
+
+                                        $cheak_promocode=applyPromocode($owner_id,$request->id);
+
+                                    }
+
+                                }
+
+
+                            }
+
+                            if($cheak_promocode){
+
+                                $request->promo_id = $cheak_promocode->id;
+
+                                $request->promo_code = $cheak_promocode->coupon_code;
+                            }
+
+
+
 
 
                             if (Input::has('promo_code')) {
@@ -5078,6 +5145,8 @@ class DogController extends BaseController
 
                                 . "sin( radians(latitude) ) ) ) ,8) <= $distance and "
 
+                                . "walker.type = ".Input::get('type')."  and "
+
                                 . "walker.deleted_at IS NULL "
 
                                 . "order by distance";
@@ -5101,6 +5170,8 @@ class DogController extends BaseController
                             $request->owner_id = $owner_id;
 
                             $request->payment_mode = $payment_opt;
+
+                            
 
 
                             if (Input::has('promo_code')) {
@@ -8182,7 +8253,8 @@ class DogController extends BaseController
 
                                         $bill['main_total'] = currency_converted($request->total);
 
-                                        $bill['total'] = currency_converted($request->total - $request->ledger_payment - $request->promo_payment);
+                                       // $bill['total'] = currency_converted($request->total - $request->ledger_payment - $request->promo_payment);
+                                        $bill['total'] = ($request->total - $request->ledger_payment - $request->promo_payment) > 0 ? currency_converted($request->total - $request->ledger_payment - $request->promo_payment) :  "0.00";
 
                                         //Owner spend the Amount of Tips
                                         $extraPayment = ExtraPayment::where('request_id', '=', $request->id)->first();
@@ -8201,6 +8273,10 @@ class DogController extends BaseController
                                         $bill['payment_type'] = $request->payment_mode;
 
                                         $bill['is_paid'] = $request->is_paid;
+
+                                        $bill['promo_code'] = $request->promo_code;
+
+                                        $bill['promo_id'] = $request->promo_id;
 
                                         $discount = 0;
 
@@ -8446,7 +8522,7 @@ class DogController extends BaseController
 
                                     $total_price = 0;
 
-                                    foreach ($rserv as $typ) {
+                                   /* foreach ($rserv as $typ) {
 
                                         $typ1 = ProviderType::where('id', $typ->type)->first();
 
@@ -8484,9 +8560,9 @@ class DogController extends BaseController
 
                                         array_push($typi, $typs);
 
-                                    }
+                                    }*/
 
-                                    $bill['type'] = $typi;
+                                    //$bill['type'] = $typi;
 
 
                                     $response_array = array(
@@ -8535,7 +8611,7 @@ class DogController extends BaseController
 
                                         'bill' => $bill ? $bill : null,
 
-                                        'owner' => $owner ? $bill : $bill,
+                                        'owner' => $owner ? $owner : null,
 
                                         'card_details' => $cards ? $cards : null,
 
@@ -11828,27 +11904,133 @@ curl_close($curl);
 
         } else {
 
-            //echo "else"; exit;
+            $is_admin = $this->isAdmin($token);
 
-            $tempAsssign = new TempAssign();
+            if ($owner_data = $this->getOwnerData($userId, $token, $is_admin)) {
 
-            $tempAsssign->userid = $userId;
-            $tempAsssign->token = $token;
-            $tempAsssign->pickupLatitude = $pickupLatitude;
-            $tempAsssign->pickupLongitude = $pickupLongitude;
-            $tempAsssign->drop_latitude = (!empty($dropoffLatitude) ? $dropoffLatitude : '');
-            $tempAsssign->drop_longitude = (!empty($dropoffLongitude) ? $dropoffLongitude : '');
-            $tempAsssign->payment_opt = $payment_option;
-            $tempAsssign->type = $type;
-            $tempAsssign->schedule_datetime = $schedule_date;
-            $tempAsssign->user_timezone = $user_timezone;
-            $tempAsssign->pickupAddress = $pickupaddress;
-            $tempAsssign->destinationAddress = $dropofflocation;
-            $tempAsssign->save();
+                // check for token validity
 
-            $response_array = array('success' => true);
+                if (is_token_active($owner_data->token_expiry) || $is_admin) {
 
-            $response_code = 200;
+
+                    $points = array();
+                    $longitude = $pickupLongitude;
+                    $latitude = $pickupLatitude;
+                    $points = $longitude . " " . $latitude;
+
+                    //Zone Division enable checking
+                    $setting_zone = Settings::where('key', 'zone_division')->first();
+
+                    if ($setting_zone->value == 1) {
+
+                        $zoneRecords = array();
+                        $result = array();
+                        $zoneRecords = getAllZoneList();
+
+                        /*echo "<pre>";
+                        print_r($zoneRecords);
+                        exit;*/
+
+                        if (empty($zoneRecords)) {
+
+                            $response_array = array('success' => false, 'error' => 'No Service for this Area', 'error_messages' => 'No Service for this Area', 'error_code' => 416);
+
+                            $response_code = 200;
+
+                            return Response::json($response_array, $response_code);
+
+                        } else {
+
+                            $zone = false;
+
+                            foreach ($zoneRecords as $key => $zoneList) {
+                                $results['id'] = '';
+                                $longitudeZoneArray = array();
+                                $latitudeZoneArray = array();
+
+                                $longitudeZoneArray = zoneLongitudeArrays($zoneList->zone_json);
+                                $latitudeZoneArray = zoneLatitudeArrays($zoneList->zone_json);
+
+                                $zoneCoordinates = array_map("zoneCoordinates", $longitudeZoneArray, $latitudeZoneArray);
+                                $pointLocation = new pointLocation();
+
+                                // The last point's coordinates must be the same as the first one's, to "close the loop"
+                                if ($pointLocation->pointInPolygon($points, $zoneCoordinates)) {
+                                    $result = $zoneList->id;
+                                    $zones = true;
+                                    break;
+
+                                }
+
+                            }
+                        }
+
+                        if (!empty($result)) {
+
+                            $zone_id = $result;
+
+
+                            $tempAsssign = new TempAssign();
+
+                            $tempAsssign->userid = $userId;
+                            $tempAsssign->token = $token;
+                            $tempAsssign->pickupLatitude = $pickupLatitude;
+                            $tempAsssign->pickupLongitude = $pickupLongitude;
+                            $tempAsssign->drop_latitude = (!empty($dropoffLatitude) ? $dropoffLatitude : '');
+                            $tempAsssign->drop_longitude = (!empty($dropoffLongitude) ? $dropoffLongitude : '');
+                            $tempAsssign->payment_opt = $payment_option;
+                            $tempAsssign->type = $type;
+                            $tempAsssign->schedule_datetime = $schedule_date;
+                            $tempAsssign->user_timezone = $user_timezone;
+                            $tempAsssign->pickupAddress = $pickupaddress;
+                            $tempAsssign->destinationAddress = $dropofflocation;
+                            $tempAsssign->save();
+
+                            $response_array = array('success' => true);
+
+                            $response_code = 200;
+
+
+
+                        } else {
+                            //send notification for owner
+
+                            send_notifications($userId, "owner", 'No ' . Config::get('app.generic_keywords.Provider') . ' Found', 'No ' . Config::get('app.generic_keywords.Provider') . ' found matching the service type.');
+
+                            $response_array = array('success' => false, 'error' => 'No Service for this Area', 'error_messages' => 'No Service for this Area', 'error_code' => 416);
+
+                            $response_code = 200;
+
+                            return Response::json($response_array, $response_code);
+
+                        }
+
+                    }
+
+         //   die("p");
+
+
+                }else{
+                    $response_array = array('success' => false, 'error' => 'Token Expired', 'error_code' => 620);
+
+                    $response_code = 200;
+
+
+                }
+
+            }else{
+                if ($is_admin) {
+
+                    $response_array = array('success' => false, 'error' => 'Owner ID not Found', 'error_code' => 621);
+
+                    $response_code = 200;
+                } else {
+
+                    $response_array = array('success' => false, 'error' => 'Not a valid token', 'error_code' => 622);
+                    $response_code = 200;
+                }
+
+            }
 
         }
 

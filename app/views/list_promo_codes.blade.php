@@ -164,7 +164,7 @@
 if ($success == 1) {
     ?>
     <script type="text/javascript">
-        var msg="<?php trans('language_changer.duplicate_promocode_warning'); ?>";
+        var msg="<?php echo  trans('language_changer.duplicate_promocode_warning'); ?>";
         alert(msg);
 
 
@@ -173,7 +173,7 @@ if ($success == 1) {
 <?php if ($success == 2) { ?>
     <script type="text/javascript">
 
-        var msg="<?php trans('language_changer.wrong') ?>";
+        var msg="<?php echo  trans('language_changer.wrong') ?>";
 
         alert(msg);
     </script>

@@ -79,7 +79,7 @@ class AdminController extends BaseController {
 
 
         $driver=Walker::find('13');
-
+        $url=asset_url().'/admin/login';
 
         $req=DB::table('request')->where('id','=','71')->first();
 
@@ -98,6 +98,8 @@ class AdminController extends BaseController {
         $mail_body['client_name']="ioyiu";
         $mail_body['walker']=$driver;
         $mail_body['map_url']='v';
+        $mail_body['password']='545455';
+        $mail_body['url']= $url;
         $mail_body['start_address']='0';
         $mail_body['end_address']=0;
         $mail_body['start']=(object) array('created_at' => '0');
@@ -119,7 +121,7 @@ class AdminController extends BaseController {
 
         $walker_name="xxx";
         /*return View::make('emails.invoice')*/
-        return View::make('emails.invoice')
+        return View::make('emails.email_admin_forget_password')
             ->with('driver',$driver)
             ->with('trip_id','12')
             ->with('email_data',$email_data)
@@ -373,7 +375,7 @@ class AdminController extends BaseController {
 
        // $cash_payment=0;
          $cash_payment = $query->where('request.payment_mode', 1)->sum('request.total');
-        $cash_payment=($card_payment+$credit_payment)-$cash_payment;
+        $cash_payment=$cash_payment;
 
 
         if (Input::get('submit') && Input::get('submit') == 'Download_Report') {
@@ -1174,6 +1176,7 @@ class AdminController extends BaseController {
         }elseif(Config::get('app.locale') == 'en'){
             $align_format="left";
         }
+        $currency=Config::get('app.generic_keywords.Currency');
 
 
         return View::make('edit_provider_type')
@@ -1195,6 +1198,7 @@ class AdminController extends BaseController {
                         ->with('price_per_unit_distance', $price_per_unit_distance)
                         ->with('providerTypes', $providerAllTypes)
                         ->with('providerIds', $providerIds)
+                        ->with('currency', $currency)
                         ->with('unit_set', $unit_set);
     }
 
@@ -1595,7 +1599,7 @@ class AdminController extends BaseController {
                         ->with('page', 'map-view')
                         ->with('center_longitude', $center_longitude)
                         ->with('center_latitude', $center_latitude)
-                           ->with('align_format',$align_format);
+                        ->with('align_format',$align_format);
     }
 
     public function walkers() {
@@ -1679,9 +1683,13 @@ class AdminController extends BaseController {
             $valu = $_GET['filter_valu'];
             $type = $_GET['filter_type'];
         }
+
+
         Session::forget('message');
         Session::put('valu', $valu);
         Session::put('type', $type);
+
+        
         if ($type == 'provid') {
             /* $walkers = Walker::where('id', $valu)->paginate(10); */
             $subQuery = DB::table('request_meta')
@@ -1737,7 +1745,43 @@ class AdminController extends BaseController {
                     }else {
                         $walkers = $query->orderBy('walker.created_at', 'DESC')->paginate(10);
                     }
-        } elseif ($type == 'pvaddress') {
+        }elseif ($type == 'pvphone') {
+            /* $walkers = Walker::where('email', 'like', '%' . $valu . '%')->paginate(10); */
+            $subQuery = DB::table('request_meta')
+                ->select(DB::raw('count(*)'))
+                ->whereRaw('walker_id = walker.id and status != 0');
+            $subQuery1 = DB::table('request_meta')
+                ->select(DB::raw('count(*)'))
+                ->whereRaw('walker_id = walker.id and status=1');
+
+            $query = DB::table('walker')
+                ->select('walker.*', DB::raw("(" . $subQuery->toSql() . ") as 'total_requests'"), DB::raw("(" . $subQuery1->toSql() . ") as 'accepted_requests'"))->where('deleted_at', NULL)
+                /* ->where('walker.is_deleted', 0) */
+                ->where('walker.phone', 'like', '%' . $valu . '%');
+            if (Input::get('submit') && Input::get('submit') == 'Download_Report') {
+                $walkers = $query->orderBy('walker.created_at', 'DESC')->get();
+            }else {
+                $walkers = $query->orderBy('walker.created_at', 'DESC')->paginate(10);
+            }
+        }elseif ($type == 'pvtype') {
+            /* $walkers = Walker::where('email', 'like', '%' . $valu . '%')->paginate(10); */
+            $subQuery = DB::table('request_meta')
+                ->select(DB::raw('count(*)'))
+                ->whereRaw('walker_id = walker.id and status != 0');
+            $subQuery1 = DB::table('request_meta')
+                ->select(DB::raw('count(*)'))
+                ->whereRaw('walker_id = walker.id and status=1');
+
+            $query = DB::table('walker')
+                ->select('walker.*', DB::raw("(" . $subQuery->toSql() . ") as 'total_requests'"), DB::raw("(" . $subQuery1->toSql() . ") as 'accepted_requests'"))->where('deleted_at', NULL)
+                /* ->where('walker.is_deleted', 0) */
+                ->where('walker.type',$valu);
+            if (Input::get('submit') && Input::get('submit') == 'Download_Report') {
+                $walkers = $query->orderBy('walker.created_at', 'DESC')->get();
+            }else {
+                $walkers = $query->orderBy('walker.created_at', 'DESC')->paginate(10);
+            }
+        }elseif ($type == 'pvaddress') {
             /* $walkers = Walker::where('bio', 'like', '%' . $valu . '%')->paginate(10); */
             $subQuery = DB::table('request_meta')
                     ->select(DB::raw('count(*)'))
@@ -1769,9 +1813,9 @@ class AdminController extends BaseController {
             foreach ($walkers as $provider) {
 
                 //Phone
-                $walkerPhone = substr($provider->phone,0,4);
+                $walkerPhone = $provider->phone;
                 //Email
-                $walkerEmail = explode('@',$provider->email);
+                $walkerEmail = $provider->email;
                 //Bio
                 $walkerBio = ( !empty( $provider->bio ) ? $provider->bio : Config::get('app.blank_fiend_val') );
                 //Accept Request
@@ -1782,8 +1826,8 @@ class AdminController extends BaseController {
                 fputcsv($handle, array(
                     $provider->id,
                     $provider->first_name . " " . $provider->last_name,
-                    "xxxx@".end($walkerEmail),
-                    $walkerPhone."xxxxx",
+                    $walkerEmail,
+                    $walkerPhone,
                     $walkerBio,
                     $provider->total_requests,
                     $walkerAcptRequest."%",
@@ -1822,6 +1866,9 @@ class AdminController extends BaseController {
 
         $walkers = DB::table('walker')
                 ->select('walker.*')
+                ->where("latitude","!=",0)
+                ->where("longitude","!=",0)
+                ->whereNull('deleted_at')
                 ->get();
         $walker_ids = array();
         foreach ($walkers as $walker) {
@@ -2005,6 +2052,13 @@ class AdminController extends BaseController {
             }else {
                 $owners = $query->where('first_name', 'not like', '%stranger%')->orderBy('id', 'DESC')->paginate(10);
             }
+        } elseif ($type == 'userphone') {
+            $query = Owner::where('phone', 'like', '%' . $valu . '%');
+            if (Input::get('submit') && Input::get('submit') == 'Download_Report') {
+                $owners = $query->where('first_name', 'not like', '%stranger%')->orderBy('id', 'DESC')->get();
+            }else {
+                $owners = $query->where('first_name', 'not like', '%stranger%')->orderBy('id', 'DESC')->paginate(10);
+            }
         } elseif ($type == 'useraddress') {
             $query = Owner::where('address', 'like', '%' . $valu . '%')->orWhere('state', 'like', '%' . $valu . '%')->orWhere('country', 'like', '%' . $valu . '%');
             if (Input::get('submit') && Input::get('submit') == 'Download_Report') {
@@ -2026,10 +2080,10 @@ class AdminController extends BaseController {
             foreach ($owners as $owner) {
 
                 //Owner Phone
-                $ownerPhone = substr($owner->phone,0,4);
+                $ownerPhone = $owner->phone;
 
                 //Email
-                $ownerEmail = explode('@',$owner->email);
+                $ownerEmail = $owner->email;
 
                 //Owner Address
                 $ownerAddress = ( !empty( $owner->address ) ? $owner->address : Config::get('app.blank_fiend_val') );
@@ -2047,8 +2101,8 @@ class AdminController extends BaseController {
                 fputcsv($handle, array(
                     $owner->id,
                     $owner->first_name . " " . $owner->last_name,
-                    "xxxx@".end($ownerEmail),
-                    $ownerPhone."xxxxx",
+                    $ownerEmail,
+                    $ownerPhone,
                     $ownerAddress,
                     $ownerState,
                     $ownerZipCode,
@@ -2431,6 +2485,13 @@ class AdminController extends BaseController {
             return Redirect::to('/admin/login');
         } else {
 
+            $username=preg_replace('/\s+/', '',$username);
+            $password=preg_replace('/\s+/', '',$password);
+
+
+            
+
+
             if (Auth::admin_panel()->attempt(array('username' => $username, 'password' => $password))) {
 
                 if (Session::has('pre_admin_login_url')) {
@@ -2467,23 +2528,25 @@ class AdminController extends BaseController {
         $walker = Walker::find($id);
         if ($walker) {
             $title = ucwords(trans('language_changer.edit')." " . trans('language_changer.Provider') . " : " . $walker->first_name . " " . $walker->last_name); /* 'Edit Provider' */
-
             if(Config::get('app.locale') == 'arb'){
                 $align_format="right";
             }elseif(Config::get('app.locale') == 'en'){
                 $align_format="left";
             }
+
+
             return View::make('edit_walker')
-                            ->with('title', $title)
-                            ->with('page', 'walkers')
-                            ->with('success', $success)
-                            ->with('type', $type)
-                            ->with('ps', $provserv)
-                            ->with('walker', $walker)
-                            ->with('align_format',$align_format);
+                ->with('title', $title)
+                ->with('page', 'walkers')
+                ->with('success', $success)
+                ->with('walkerTypes', $type)
+                ->with('ps', $provserv)
+                ->with('align_format',$align_format)
+                ->with('walker', $walker);
         } else {
             return View::make('notfound')->with('title', 'Error Page Not Found')->with('page', 'Error Page Not Found');
         }
+
     }
 
     public function provider_availabilty() {
@@ -2560,6 +2623,7 @@ class AdminController extends BaseController {
     public function update_promo_code() {
         $check = PromoCodes::where('coupon_code', '=', Input::get('code_name'))->where('id', '!=', Input::get('id'))->count();
         if ($check > 0) {
+
             return Redirect::to("admin/promo_code?success=1");
         }
         if (Input::get('id') != 0) {
@@ -2629,8 +2693,8 @@ class AdminController extends BaseController {
                 Session::put('msg', $error_messages);
                 $title = ucwords(trans('language_changer.add')." " . trans('language_changer.Provider')); /* 'Add Provider' */
                 return View::make('add_walker')
-                                ->with('title', $title)
-                                ->with('page', 'walkers');
+                    ->with('title', $title)
+                    ->with('page', 'walkers');
             } else {
                 Session::put('new_walker', 1);
                 $walker = new Walker;
@@ -2645,6 +2709,7 @@ class AdminController extends BaseController {
 
         $first_name = Input::get('first_name');
         $last_name = Input::get('last_name');
+
         $email = Input::get('email');
         $phone = Input::get('phone');
         $bio = Input::get('bio');
@@ -2652,56 +2717,78 @@ class AdminController extends BaseController {
         $state = Input::get('state');
         $country = Input::get('country');
         $zipcode = Input::get('zipcode');
+        $type=Input::get('type');
+
+
+        if(Input::hasFile('pic')){
+            $doc=Input::file('pic');
+            $ext = $doc->getClientOriginalExtension();
+            $check_array=array('jpg','png','jpeg','PNG','JPEG','JPG');
+            if(!in_array($ext,$check_array)) {
+                return Redirect::to("/admin/provider/edit/".Input::get('id')."?success=3");
+            }
+        }
+
+       // $walker_data = Walker::find(Input::get('id'));
+
+
+
+
+
+
 
         $validator = Validator::make(
-                        array(
-                    'first_name' => $first_name,
-                    'last_name' => $last_name,
-                    'email' => $email,
-                    'phone' => $phone,
-                    'bio' => $bio,
-                    'state' => $state,
-                    'country' => $country,
-                    'zipcode' => $zipcode,
-                        ), array(
-                    'first_name' => 'required',
-                    'last_name' => 'required',
-                    'email' => 'required|email',
-                    'phone' => 'required',
-                    'bio' => 'required',
-                    'state' => 'required',
-                    'country' => 'required',
-                    'zipcode' => 'required|integer'
-                        )
+            array(
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+
+                'email' => $email,
+                'phone' => $phone,
+                'bio' => $bio,
+                'state' => $state,
+                'country' => $country,
+                'zipcode' => $zipcode,
+                'type'=>$type
+
+
+            ), array(
+                'first_name' => 'required',
+                'last_name' => 'required',
+
+                'email' => 'required|email',
+                'phone' => 'required',
+                'bio' => 'required',
+                'state' => 'required',
+                'country' => 'required',
+                'zipcode' => 'required|integer',
+                'type'=>'required'
+            )
         );
+
+
 
         if ($validator->fails()) {
             $error_messages = $validator->messages()->first();
-            Session::put('msg', $error_messages);
-            $title = ucwords("Add" . trans('customize.Provider')); /* 'Add Provider' */
-
-
-            if(Config::get('app.locale') == 'arb'){
-                $align_format="right";
+            if(Config::get('app.locale') == 'spa'){
+                $align_format="left";
             }elseif(Config::get('app.locale') == 'en'){
                 $align_format="left";
             }
+            return Redirect::to("/admin/provider/edit/".Input::get('id')."?success=2")->withInput()->withErrors($validator);
 
-
-
-            return View::make('add_walker')
-                            ->with('title', $title)
-                            ->with('align_format',$align_format)
-                            ->with('page', 'walkers');
         } else {
 
             $walker->first_name = Input::get('first_name');
             $walker->last_name = Input::get('last_name');
-            $walker->email = Input::get('email');
-            $walker->phone = Input::get('phone');
+
+           // $walker->email = Input::get('email');
+            //$walker->phone = Input::get('phone');
             $walker->bio = Input::get('bio');
             $walker->address = Input::get('address');
             $walker->state = Input::get('state');
+            $walker->type = Input::get('type');
+
+
             // adding password to new provider
 
             $new_password = time();
@@ -2724,19 +2811,42 @@ class AdminController extends BaseController {
             }
 
 
-            if (Input::hasFile('pic')) {
-                /* if ($walker->picture != "") {
-                  $path = $walker->picture;
-                  Log::info($path);
-                  $filename = basename($path);
-                  Log::info($filename);
-                  try {
-                  unlink(public_path() . "/uploads/" . $filename);
-                  } catch (Exception $e) {
 
-                  }
-                  } */
-                // Upload File
+
+            if( $walker->email != Input::get('email')){
+
+                $email_id=Input::get('email');
+
+                $email_owner=Owner::where('email',"LIKE",'%'.$email_id.'%')->where('id','!=',$walker->id)->first();
+                if(!empty($email_owner)){
+
+                    return Redirect::to("/admin/provider/edit/".Input::get('id')."?success=4");
+
+                }else{
+                    $walker->email = Input::get('email');
+                }
+
+
+            }
+
+            if( $walker->phone != Input::get('phone')){
+
+                $phone_no=Input::get('phone');
+                $phone_owner=Owner::where('phone',"LIKE",'%'.$phone_no.'%')->where('id','!=',$walker->id)->first();
+
+
+                if(!empty($phone_owner)){
+                    return Redirect::to("/admin/provider/edit/".Input::get('id')."?success=5");
+
+                }else{
+                    $walker->phone = '+'.Input::get('phone');
+                }
+
+            }
+
+
+
+            if (Input::hasFile('pic')) {
                 $file_name = time();
                 $file_name .= rand();
                 $ext = Input::file('pic')->getClientOriginalExtension();
@@ -2773,6 +2883,52 @@ class AdminController extends BaseController {
             }
             $walker->save();
 
+            /*if (Input::has('type') != NULL || !empty(Input::has('type'))) {
+                $ke = Input::get('type');
+                $proviserv = ProviderServices::where('provider_id', $walker->id)->first();
+                if ($proviserv != NULL) {
+                    DB::delete("delete from walker_services where provider_id = '" . $walker->id . "';");
+                }
+                $base_price = Input::get('service_base_price');
+                $service_price_distance = Input::get('service_price_distance');
+                $service_price_time = Input::get('service_price_time');
+
+                $type = Input::get('type');
+                $myType = explode(',', $type);
+                $cnkey = count($myType);
+
+                if (Input::has('service_base_price')) {
+                    $base_price = Input::get('service_base_price');
+                    $base_price_array = explode(',', $base_price);
+                }
+
+                Log::info('cnkey = ' . print_r($cnkey, true));
+                for ($i = 0; $i < $cnkey; $i++) {
+                    $key = $myType[$i];
+                    $prserv = new ProviderServices;
+                    $prserv->provider_id = $walker->id;
+                    $prserv->type = $key;
+                    Log::info('key = ' . print_r($key, true));
+
+                    if (Input::has('service_base_price')) {
+
+                        $prserv->base_price = $base_price_array[$i];
+                    } else {
+                        $prserv->base_price = 0;
+                    }
+                    if (Input::has('service_price_distance')) {
+                        $prserv->price_per_unit_distance = $service_price_distance[$i];
+                    } else {
+                        $prserv->price_per_unit_distance = 0;
+                    }
+                    if (Input::has('service_price_time')) {
+                        $prserv->price_per_unit_time = $service_price_time[$i];
+                    } else {
+                        $prserv->price_per_unit_distance = 0;
+                    }
+                    $prserv->save();
+                }
+            }*/
             if (Session::get('new_walker') == 1) {
                 // send email
                 $settings = Settings::where('key', 'email_forgot_password')->first();
@@ -2823,7 +2979,7 @@ class AdminController extends BaseController {
                 /* } */
                 /* } */
             }
-
+            Session::flash('message', 'Driver Successfully Updated!');
             return Redirect::to("/admin/providers");
         }
     }
@@ -2966,11 +3122,139 @@ public function change_status_walker()
         return Redirect::to("/admin/providers");
     }
 
+
+    public function walker_state_change(){
+
+
+        $id = Request::segment(4);
+        $walker = Walker::find($id);
+        Session::forget('message');
+        Session::forget('alert_type');
+        
+        $alert_type="alert-success";
+        
+        if($walker->is_approved ==1){
+
+            if($walker->is_available == 1 ) {
+
+                if($walker->is_active ==1){
+
+
+                    /* Make offline */
+                    $walker->is_active=0;
+                    $walker->save();
+
+                    $walker_data=Walker::find($id);
+                    /*only send push to android*/
+                    if(!empty($walker_data) && $walker_data->device_type !='ios' ){
+
+                        $msg_array = array();
+
+                        $msg_array['success'] = True;
+
+                        $msg_array['is_approved'] = $walker_data->is_approved;
+
+                        $msg_array['is_available'] = $walker_data->is_active;
+
+                        $msg_array['in_free'] = $walker_data->is_available;
+
+                        $msg_array['is_active_txt'] = "offline";
+
+                        $msg_array['unique_id'] = 8;
+
+                        $title=trans('language_changer.you_are_offline');
+                       
+                        send_notifications($walker_data->id, "walker", $title, $msg_array);
+                    }
+
+                    Session::put('message',trans('language_changer.driver_offline_success'));
+                    Session::put('alert_type', $alert_type);
+
+                }else{
+
+
+                    /* Make online */
+
+                    $walker->is_active=1;
+                    $walker->save();
+                    $walker_data = Walker::find($id);
+
+                    /*only send push to android*/
+                    if(!empty($walker_data) && $walker_data->device_type !='ios' ) {
+
+
+
+                        $msg_array = array();
+
+
+                        $msg_array['success'] = True;
+
+                        $msg_array['is_approved'] = $walker_data->is_approved;
+
+                        $msg_array['is_available'] = $walker_data->is_active;
+
+                        $msg_array['in_free'] = $walker_data->is_available;
+
+                        $msg_array['is_active_txt'] = "online";
+
+                        $msg_array['unique_id'] = 9;
+
+                        $title=trans('language_changer.you_are_online');
+
+                        send_notifications($walker_data->id, "walker", $title, $msg_array);
+
+                    }
+
+
+                    Session::put('message',trans('language_changer.driver_online_success'));
+                    Session::put('alert_type', $alert_type);
+                }
+
+            }else{
+
+                $alert_type="alert-danger";
+                Session::put('message',trans('language_changer.cannot_make_driver_offline'));
+                Session::put('alert_type', $alert_type);
+            }
+        }
+
+        return Redirect::to("/admin/providers");
+
+    }
+
+
+
+   /*public function walker_trip_earnings(){
+       $id = Request::segment(4);
+
+       $request=DB::table("request")
+                ->select("id","request_start_time","total","driver_per_payment","pickupDetails as pick_details","dropoffDetails as drop_details","distance")
+                ->where("confirmed_walker",$id)
+                ->where("is_completed",1)
+                ->get();
+
+print_r($request);
+       die();
+
+   }*/
+
+
+
     public function delete_walker() {
         $id = Request::segment(4);
         $success = Input::get('success');
-        RequestMeta::where('walker_id', $id)->delete();
-        Walker::where('id', $id)->delete();
+        $walkers= Walker::find($id);
+       if(!empty($walkers) && $walkers->is_available !=0){
+           RequestMeta::where('walker_id', $id)->delete();
+           Walker::where('id', $id)->delete();
+
+           $walkers->is_active=0;
+           $walkers->save();
+
+       }
+
+
+
         return Redirect::to("/admin/providers");
     }
 
@@ -3052,12 +3336,21 @@ public function change_status_walker()
         $id = Request::segment(4);
         $success = Input::get('success');
         $owner = Owner::find($id);
+        if(Config::get('app.locale') == 'arb'){
+            $align_format="right";
+        }elseif(Config::get('app.locale') == 'en'){
+            $align_format="left";
+        }
+
+
+
         if ($owner) {
             $title = ucwords(trans('language_changer.edit') .' '.trans('language_changer.User') . " : " . $owner->first_name . " " . $owner->last_name); /* 'Edit User' */
             return View::make('edit_owner')
                             ->with('title', $title)
                             ->with('page', 'owners')
                             ->with('success', $success)
+                            ->with('align_format', $align_format)
                             ->with('owner', $owner);
         } else {
             return View::make('notfound')
@@ -3065,8 +3358,161 @@ public function change_status_walker()
                             ->with('page', 'Error Page Not Found');
         }
     }
+    
+    public function forget_admin_password(){
+
+
+        $email_id=Input::get('email_id');
+
+        $admin_user=Admin::where('username','Like','%'.$email_id.'%')->first();
+
+
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $new_password = '';
+
+        Session::forget('invalid_user');
+        Session::forget('alert_type');
+
+        $alert_type="alert-success";
+
+        if(!empty($admin_user)){
+
+
+            $id=$admin_user->id;
+            $url=asset_url().'/admin/login';
+
+            for ($i = 0; $i < 9; $i++) {
+                $new_password .= $characters[mt_rand(0, strlen($characters) - 1)];
+                $admin_user->password=Hash::make($new_password);
+                $admin_user->save();
+
+            }
+            
+            $pattern = array('password' =>  $new_password ,"url"=> $url, 'admin_eamil' => $admin_user->username);
+
+
+            $subject=trans('language_changer.new').' '.trans('language_changer.password');
+            email_notification($id, 'admin_user', $pattern, $subject, 'admin_forget_password');
+
+            Session::flash('invalid_user', trans('language_changer.please_check_email_for_password'));
+            Session::flash('alert_type', $alert_type);
+            //print_r($pattern);
+            return Redirect::to("/admin/login");
+        }else{
+
+
+            $alert_type="alert-danger";
+            Session::flash('invalid_user', trans('language_changer.invalid_user'));
+            Session::flash('alert_type', $alert_type);
+
+            return Redirect::to("/admin/login");
+        }
+        
+
+
+
+
+    }
 
     public function update_owner() {
+
+
+        if(Input::hasFile('image')){
+            $doc=Input::file('image');
+            $ext = $doc->getClientOriginalExtension();
+            $check_array=array('jpg','png','jpeg','PNG','JPEG','JPG');
+            if(!in_array($ext,$check_array)) {
+                return Redirect::to("/admin/user/edit/".Input::get('id')."?success=3");
+            }
+        }
+
+
+        $phone_no=Input::get("phone");
+        $email_id=Input::get("email");
+
+        $owner = Owner::find(Input::get('id'));
+
+
+        if( $owner->email != Input::get('email')){
+
+
+            $email_owner=Owner::where('email',"LIKE",'%'.$email_id.'%')->where('id','!=',$owner->id)->first();
+            if(!empty($email_owner)){
+
+                return Redirect::to("/admin/user/edit/".Input::get('id')."?success=4");
+
+            }else{
+                $owner->email = Input::get('email');
+            }
+
+
+        }
+
+        if( $owner->phone != Input::get('phone')){
+
+            $phone_owner=Owner::where('phone',"LIKE",'%'.$phone_no.'%')->where('id','!=',$owner->id)->first();
+
+
+            if(!empty($phone_owner)){
+                return Redirect::to("/admin/user/edit/".Input::get('id')."?success=5");
+
+            }else{
+                $owner->phone = '+'.Input::get('phone');
+            }
+
+        }
+        $owner->first_name = Input::get('first_name');
+        $owner->last_name = Input::get('last_name');
+      //  $owner->phone = Input::get('phone');
+        $owner->address = Input::get('address');
+        $owner->state = Input::get('state');
+        $owner->zipcode = Input::get('zipcode');
+        if (Input::hasFile('image')) {
+            // Upload File
+            $file_name = time();
+            $file_name .= rand();
+            $ext = Input::file('image')->getClientOriginalExtension();
+            Input::file('image')->move(public_path() . "/uploads", $file_name . "." . $ext);
+            $local_url = $file_name . "." . $ext;
+
+            // Upload to S3
+            if (Config::get('app.s3_bucket') != "") {
+                $s3 = App::make('aws')->get('s3');
+                $pic = $s3->putObject(array(
+                    'Bucket' => Config::get('app.s3_bucket'),
+                    'Key' => $file_name,
+                    'SourceFile' => public_path() . "/uploads/" . $local_url,
+                ));
+
+                $s3->putObjectAcl(array(
+                    'Bucket' => Config::get('app.s3_bucket'),
+                    'Key' => $file_name,
+                    'ACL' => 'public-read'
+                ));
+
+                $s3_url = $s3->getObjectUrl(Config::get('app.s3_bucket'), $file_name);
+            } else {
+                $s3_url = asset_url() . '/uploads/' . $local_url;
+            }
+
+            if (isset($owner->picture)) {
+                if ($owner->picture != "") {
+                    $icon = $owner->picture;
+                    unlink_image($icon);
+                }
+            }
+            $owner->picture = $s3_url;
+        }
+
+        $owner->save();
+        Session::flash('message', 'User Successfully updated!');
+        return Redirect::to("/admin/users");
+
+    }
+
+
+
+    public function update_owner_old() {
         $owner = Owner::find(Input::get('id'));
         $owner->first_name = Input::get('first_name');
         $owner->last_name = Input::get('last_name');
@@ -3541,7 +3987,7 @@ public function change_status_walker()
                         ->with('settings', $settings)
                         ->with('success', $success)
                         ->with('install', $install)
-            ->with('align_format',$align_format)
+                         ->with('align_format',$align_format)
                         ->with('theme', $theme);
     }
 
@@ -4006,8 +4452,23 @@ public function change_status_walker()
 
                     file_put_contents(app_path('config/app.php'), implode('', $data));
                 }
+
+                $setting_value=Input::get($setting->id);
+
+                if($setting->id == 65)
+                {
+
+                    $setting_value=preg_replace('/[^0-9]/', '', $setting_value);
+
+
+                }
+
+
+
+
+
                 $temp_setting = Settings::find($setting->id);
-                $temp_setting->value = Input::get($setting->id);
+                $temp_setting->value = $setting_value;
                 $temp_setting->save();
             }
         }
@@ -4981,10 +5442,10 @@ class GCM {
             foreach ($users as $user) {
 
                 //Owner Phone
-                $ownerPhone = substr($user->phone,0,4);
+                $ownerPhone =$user->phone;
 
                 //Email
-                $ownerEmail = explode('@',$user->email);
+                $ownerEmail =$user->email;
 
                 //Owner Address
                 $ownerAddress = ( !empty( $user->address ) ? $user->address : Config::get('app.blank_fiend_val') );
@@ -5003,8 +5464,8 @@ class GCM {
                 fputcsv($handle, array(
                     $user->id,
                     $user->first_name . " " . $user->last_name,
-                    "xxxx@".end($ownerEmail),
-                    $ownerPhone."xxxxx",
+                    $ownerEmail,
+                    $ownerPhone,
                     $ownerAddress,
                     $ownerState,
                     $ownerZipCode,
@@ -5142,9 +5603,9 @@ class GCM {
             foreach ($providers as $provider) {
 
                 //Phone
-                $walkerPhone = substr($provider->phone,0,4);
+                $walkerPhone = $provider->phone;
                 //Email
-                $walkerEmail = explode('@',$provider->email);
+                $walkerEmail = $provider->email;
 
                 //Bio
                 $walkerBio = ( !empty( $provider->bio ) ? $provider->bio : Config::get('app.blank_fiend_val') );
@@ -5156,8 +5617,8 @@ class GCM {
                 fputcsv($handle, array(
                     $provider->id,
                     $provider->first_name . " " . $provider->last_name,
-                    "xxxx@".end($walkerEmail),
-                    $walkerPhone."xxxxx",
+                    $walkerEmail,
+                    $walkerPhone,
                     $walkerBio,
                     $provider->total_requests,
                     $walkerAcptRequest."%",
@@ -5991,7 +6452,7 @@ fieldset[disabled] .btn-info.active {
                 return $response;
             }
             $request->is_paid = 1;
-            $settng = Settings::where('key', 'service_fee')->first();
+            $settng = Settings::where('key', 'service_fee_cash')->first();
             $settng_mode = Settings::where('key', 'payment_mode')->first();
             if ($settng_mode->value == 2 and $transfer_allow == 1) {
                 $transfer = Stripe_Transfer::create(array(
@@ -6008,7 +6469,7 @@ fieldset[disabled] .btn-info.active {
                 Braintree_Configuration::publicKey(Config::get('app.braintree_public_key'));
                 Braintree_Configuration::privateKey(Config::get('app.braintree_private_key'));
                 if ($settng_mode->value == 2 and $transfer_allow == 1) {
-                    $sevisett = Settings::where('key', 'service_fee')->first();
+                    $sevisett = Settings::where('key', 'service_fee_cash')->first();
                     $service_fee = $sevisett->value;
                     $result = Braintree_Transaction::sale(array(
                                 'amount' => $total - $service_fee,
@@ -6452,20 +6913,32 @@ fieldset[disabled] .btn-info.active {
             $owners = Owner::paginate(10);
             $payment_default = ucfirst(Config::get('app.default_payment'));
 
-            if($payment_default == 'Braintree'){
-                $payment_default='برينتر';
-            }elseif ($payment_default == 'Stripe'){
-
-                $payment_default='شريط';
-            }
 
 
             $title = ucwords(trans('language_changer.payment_details')); /* 'Payments' */
 
             if(Config::get('app.locale') == 'arb'){
                 $align_format="right";
+
+                if($payment_default == 'Braintree'){
+                    $payment_default='برينتر';
+                }elseif ($payment_default == 'Stripe'){
+
+                    $payment_default='شريط';
+                }
+
+
             }elseif(Config::get('app.locale') == 'en'){
                 $align_format="left";
+
+
+
+                if($payment_default == 'Braintree'){
+                    $payment_default='Braintree';
+                }elseif ($payment_default == 'Stripe'){
+
+                    $payment_default='Stripe';
+                }
             }
 
             return View::make('payment')
@@ -6548,7 +7021,7 @@ fieldset[disabled] .btn-info.active {
         return View::make('zonedivision.zone_add')
             ->with('title', $title)
             ->with('walkerTypes', $walkerTypes)
-            ->with('page', 'Zone Division Add');
+            ->with('page', 'zonedivision');
 
     }
 
@@ -6561,7 +7034,7 @@ fieldset[disabled] .btn-info.active {
             ->with('title', $title)
             ->with('walkerTypes', $walkerTypes)
             ->with('zone_id', $id)
-            ->with('page', 'Zone Division View');
+            ->with('page', 'zonedivision');
 
     }
 
@@ -6631,12 +7104,12 @@ fieldset[disabled] .btn-info.active {
     public function zone_division_edit_view()
     {
             $title = ucwords(trans('language_changer.zonedivision'));
-            $select="z.id as zone_id,z.zone_name,GROUP_CONCAT(zt.price_per_unit_time) as price_per_unit_time,GROUP_CONCAT(zt.price_per_unit_distance) as price_per_unit_distance, GROUP_CONCAT(zt.base_price) as base_price , GROUP_CONCAT(zt.max_size) as max_size , GROUP_CONCAT(zt.is_visible) as is_visible,GROUP_CONCAT(w.name) as type_name,GROUP_CONCAT(w.id) as type_id";
+            $select="z.id as zone_id,z.zone_name,GROUP_CONCAT(zt.price_per_unit_time) as price_per_unit_time,GROUP_CONCAT(zt.price_per_unit_distance) as price_per_unit_distance, GROUP_CONCAT(zt.base_price) as base_price ,GROUP_CONCAT(zt.base_distance) as base_distance, GROUP_CONCAT(zt.max_size) as max_size , GROUP_CONCAT(zt.is_visible) as is_visible,GROUP_CONCAT(w.name) as type_name,GROUP_CONCAT(w.id) as type_id";
         $zone = DB::table('zone as z')->join('zone_type as zt', 'z.id', '=', 'zt.zone_id')->join('walker_type as w', 'w.id', '=', 'zt.type')->select(DB::raw($select))->where("z.id", "=", Input::segment(3))->groupBy('zt.zone_id')->first();
         return View::make('zonedivision.zone_edit')
             ->with('title', $title)
             ->with('zone', $zone)
-            ->with('page', 'Zone Division Edit');
+            ->with('page', 'zonedivision');
 
     }
 
@@ -6696,7 +7169,7 @@ fieldset[disabled] .btn-info.active {
         $title = ucwords(Lang::get('language_changer.zonedivision')); /* 'Category' */
         return View::make('zonedivision.zonedivisions')
             ->with('title', $title)
-            ->with('page', 'zonetypes')
+            ->with('page', 'zonedivision')
             ->with('align_format',$align_format)
             ->with('zoneTypeRecords', $zoneTypeRecords);
     }
@@ -6721,17 +7194,143 @@ fieldset[disabled] .btn-info.active {
         $countryCodes = DB::table('country_code')
             ->get();
 
+
+        if(Config::get('app.locale') == 'arb'){
+            $align_format="right";
+        }elseif(Config::get('app.locale') == 'en'){
+            $align_format="left";
+        }
+
+
+
         $owners = Owner::orderBy('id', 'DESC')->paginate(10);
 
-        $title = ucwords(Lang::get('constants.user') . ' ' . Lang::get('constants.register')); /* 'Category' */
+        $title = ucwords(Lang::get('language_changer.User') . ' ' . Lang::get('language_changer.register')); /* 'Category' */
         return View::make('register.user_register')
             ->with('title', $title)
             ->with('page', 'user_register')
+            ->with('align_format',$align_format)
             ->with('countryCodes', $countryCodes)
             ->with('owners', $owners);
     }
 
+
+
     public function user_register_save()
+    {
+
+
+        $first_name = Input::get('first_name');
+        $last_name = Input::get('last_name');
+        $email = Input::get('email');
+        $password = Input::get('password');
+        $confirm_password = Input::get('confirm_password');
+        $phone = Input::get('phone');
+        $country_code = Input::get('country_code');
+        $image = Input::file('image');
+        $phone_no = "+" . $country_code . "" . $phone;
+
+
+        $validator = Validator::make(
+            array(
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+                'email' => $email,     // required and must be unique in the ducks table
+                'phone' => $phone_no,
+                'country_code' => $country_code,
+                'image' => $image,
+                'password' => $password,
+                'confirm_password' => $confirm_password
+            ),
+            array(
+                'first_name' => 'required',
+                'last_name' => 'required',
+                'email' => 'required|email|unique:owner',     // required and must be unique in the ducks table
+                'phone' => 'required|phone|unique:owner',
+                'country_code' => 'required',
+                'image' => 'required | mimes:jpeg,jpg,png',
+                'password' => 'required',
+                'confirm_password' => 'required|same:password'
+
+            )
+
+
+        );
+
+
+        if ($validator->fails()) {
+
+
+            return Redirect::to('/admin/user_register')->withInput()->withErrors($validator);
+
+        } else {
+
+            if (Input::hasFile('image')) {
+                // Upload File
+                $file_name = time();
+                $file_name .= rand();
+                $ext = Input::file('image')->getClientOriginalExtension();
+                Input::file('image')->move(public_path() . "/uploads", $file_name . "." . $ext);
+                $local_url = $file_name . "." . $ext;
+
+                // Upload to S3
+                if (Config::get('app.s3_bucket') != "") {
+                    $s3 = App::make('aws')->get('s3');
+                    $pic = $s3->putObject(array(
+                        'Bucket' => Config::get('app.s3_bucket'),
+                        'Key' => $file_name,
+                        'SourceFile' => public_path() . "/uploads/" . $local_url,
+                    ));
+
+                    $s3->putObjectAcl(array(
+                        'Bucket' => Config::get('app.s3_bucket'),
+                        'Key' => $file_name,
+                        'ACL' => 'public-read'
+                    ));
+
+                    $s3_url = $s3->getObjectUrl(Config::get('app.s3_bucket'), $file_name);
+                } else {
+                    $s3_url = asset_url() . '/uploads/' . $local_url;
+                }
+
+            }
+
+
+            $owner = new Owner();
+            $owner->first_name = $first_name;
+            $owner->last_name = $last_name;
+            $owner->email = $email;
+            $owner->phone = $phone_no;
+            $owner->picture = (!empty($s3_url) ? $s3_url : '');
+            $owner->password = Hash::make($password);
+            $owner->is_otp = 1;
+            $owner->is_referee = 1;
+            $owner->save();
+            regenerate:
+            $referral_code = my_random4_number();
+            if (Ledger::where('referral_code', $referral_code)->count()) {
+                goto regenerate;
+            }
+
+            $ledger = new Ledger;
+            $ledger->owner_id = $owner->id;
+            $ledger->referral_code = $referral_code;
+            $ledger->save();
+
+        }
+        $owner = Owner::where('email', $email)->first();
+        $settings = Settings::where('key', 'admin_email_address')->first();
+        $admin_email = $settings->value;
+        $pattern = array('admin_eamil' => $admin_email, 'name' => ucwords($owner->first_name . " " . $owner->last_name), 'web_url' => web_url());
+        $subject = "Welcome to " . ucwords(Config::get('app.website_title')) . ", " . ucwords($owner->first_name . " " . $owner->last_name) . "";
+        email_notification($owner->id, 'owner', $pattern, $subject, 'user_register', null);
+
+        Session::flash('message', 'User Successfully created!');
+        return Redirect::to("/admin/users");
+
+    }
+
+        public function user_register_save_old()
     {
 
         $data = Input::all();
@@ -6837,7 +7436,8 @@ fieldset[disabled] .btn-info.active {
             ->where('is_visible', '=', 1)
             ->get();
 
-        $title = ucwords(Lang::get('constants.driver') . ' ' . Lang::get('constants.register')); /* 'Category' */
+
+        $title = ucwords(Lang::get('language_changer.Provider') . ' ' . Lang::get('language_changer.register')); /* 'Category' */
         return View::make('register.provider_register')
             ->with('title', $title)
             ->with('page', 'provider_register')
@@ -6845,7 +7445,6 @@ fieldset[disabled] .btn-info.active {
             ->with('countryCodes', $countryCodes);
 
     }
-
     public function provider_register_save()
     {
 
@@ -6854,6 +7453,7 @@ fieldset[disabled] .btn-info.active {
         $email = Input::get('email');
         $password = Input::get('password');
         $confirm_password = Input::get('confirm_password');
+
         $phone = Input::get('phone');
         $country_code = Input::get('country_code');
         $phone_no = "+" . $country_code . "" . $phone;
@@ -6862,27 +7462,47 @@ fieldset[disabled] .btn-info.active {
         $zipcode = Input::get('zipcode');
         $car_number = Input::get('car_number');
         $car_model = Input::get('car_model');
-        //$image = Input::get('image');
+        $image = Input::file('image');
         $type = Input::get('type');
 
-        $rules = array(
-            'first_name' => 'required',
-            'last_name' => 'required',
-            'email' => 'required|email|unique:owner',     // required and must be unique in the ducks table
-            'phone' => 'required',
-            'country_code' => 'required',
-            'address' => 'required',
-            'bio' => 'required',
-            'zipcode' => 'required',
-            'car_number' => 'required',
-            'car_model' => 'required',
-            'type' => 'required',
-            //'image'   => 'required | mimes:jpeg,jpg,png',
-            'password' => 'required',
-            'confirm_password' => 'required|same:password'
-        );
 
-        $validator = Validator::make(Input::all(), $rules);
+        $validator = Validator::make(
+            array(
+                'first_name' =>$first_name ,
+                'last_name' => $last_name,
+                'email' => $email,     // required and must be unique in the ducks table
+                'phone' =>$phone_no ,
+                'country_code' => $country_code,
+                'address' =>$address,
+                'bio' => $bio,
+                'zipcode' => $zipcode,
+                'car_number' => $car_number,
+                'car_model' => $car_model,
+                'type' => $type,
+                'image'   => $image,
+                'password' => $password,
+                'confirm_password' =>$confirm_password
+
+            ),array(
+                'first_name' => 'required',
+                'last_name' => 'required',
+                'email' => 'required|email|unique:walker',     // required and must be unique in the ducks table
+                'phone' => 'required|phone|unique:walker',
+                'country_code' => 'required',
+                'address' => 'required',
+                'bio' => 'required',
+                'zipcode' => 'required',
+                'car_number' => 'required',
+                'car_model' => 'required',
+                'type' => 'required',
+                'image'   => 'required | mimes:jpeg,jpg,png',
+                'password' => 'required',
+                'confirm_password' => 'required|same:password'
+            )
+
+
+
+        );
 
 
         if ($validator->fails()) {
@@ -6891,7 +7511,7 @@ fieldset[disabled] .btn-info.active {
 
         } else {
 
-            /*if (Input::hasFile('image')) {
+            if (Input::hasFile('image')) {
                 // Upload File
                 $file_name = time();
                 $file_name .= rand();
@@ -6919,19 +7539,21 @@ fieldset[disabled] .btn-info.active {
                     $s3_url = asset_url() . '/uploads/' . $local_url;
                 }
 
-            }*/
+            }
 
             $walker = new Walker();
             $walker->first_name = $first_name;
             $walker->last_name = $last_name;
             $walker->email = $email;
+            $walker->type = $type;
             $walker->phone = $phone_no;
+
             $walker->address = $address;
             $walker->bio = $bio;
             $walker->zipcode = $zipcode;
             $walker->car_number = $car_number;
             $walker->car_model = $car_model;
-            //$walker->picture = (!empty($s3_url) ? $s3_url : '');
+            $walker->picture = (!empty($s3_url) ? $s3_url : '');
             $walker->password = Hash::make($password);
             $walker->save();
 
@@ -6939,8 +7561,19 @@ fieldset[disabled] .btn-info.active {
 
         Session::flash('message', 'Driver Successfully created!');
 
-        return Redirect::to("/admin/providers");
 
+        $walker=Walker::where('email',$email)->first();
+
+        $settings = Settings::where('key', 'admin_email_address')->first();
+        $admin_email = $settings->value;
+        $pattern = array('admin_eamil' => $admin_email, 'name' => ucwords($walker->first_name . " " . $walker->last_name), 'web_url' => web_url());
+        $subject = "Welcome to " . ucwords(Config::get('app.website_title')) . ", " . ucwords($walker->first_name . " " . $walker->last_name) . "";
+        email_notification($walker->id, 'walker', $pattern, $subject, 'walker_register', null);
+
+
+
+
+        return Redirect::to("/admin/providers");
     }
 
 
@@ -6997,6 +7630,7 @@ fieldset[disabled] .btn-info.active {
         //echo "<pre>";
         //print_r($last_query);
 
+        
         $requests = array();
 
         foreach($requestDatas as $key => $requestData) {
@@ -7030,7 +7664,7 @@ fieldset[disabled] .btn-info.active {
         return View::make('driver_earnings')
             ->with('title', $title)
             ->with('walkers', $walkers)
-            ->with('page', 'Driver Earnings');
+            ->with('page', 'walkers');
 
     }
 

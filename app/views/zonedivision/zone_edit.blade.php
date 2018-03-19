@@ -34,7 +34,7 @@
                                 <th>{{ trans('language_changer.type') }}</th>
                                 <th>{{ trans('language_changer.base_price') }}</th>
                                 <th>{{ trans('language_changer.price_per_unit_distance') }}</th>
-                                <th>{{ trans('language_changer.price_per_unit_time') }}</th>
+                                <th>{{ trans('language_changer.price_per_unit_time'),'('.trans('language_changer.minutes').')' }}</th>
                                 <th>{{ trans('language_changer.max_size') }}</th>
                                 <th>{{ trans('language_changer.base_distance') }}</th>
                                 <th>{{ trans('language_changer.visible') }}</th>
@@ -47,6 +47,7 @@
                                     $is_visible=explode(',',$zone->is_visible);
                                     $type_name=explode(',',$zone->type_name);
                                     $type_id=explode(',',$zone->type_id);
+                                    $base_distance=explode(',',$zone->base_distance);
                             for($i=0;$i<count($type_id);$i++)
                             {
                             ?>
@@ -88,7 +89,7 @@
                                     <input class="form-control" name="service_base_distance[]"
                                            data-type="{{$type_name[$i]}}" data-id="{{$type_id[$i]}}"
                                            title="Base Distance"
-                                           type="text" value="{{$max_size[$i]}}" placeholder="{{ trans('language_changer.base_distance') }}"><br>
+                                           type="text" value="{{$base_distance[$i]}}" placeholder="{{ trans('language_changer.base_distance') }}"><br>
                                 </td>
                                 <td>
                                     <input class="form-control" name="visible_{{$type_id[$i]}}"

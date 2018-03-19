@@ -57,7 +57,7 @@ return array(
             'host'      => 'localhost',
             'database'  => 'zadmin_taxi',
             'username'  => 'taxi',
-            'password'  => 'yda6y8ery',
+            'password'  => 'Z47XaWwyy',
             'charset'   => 'utf8',
             'collation' => 'utf8_unicode_ci',
             'prefix'    => '',

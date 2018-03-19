@@ -11,7 +11,7 @@ return array(
 
     /*Decline walker*/
     'decline_driver_from'=>'Decline as a Driver from',
-    'hello'=>'Hola',
+    'hello'=>'Hello',
     'please_us_further_details'=>'Please reach out to us for further details',
 
     /*Driver email*/
@@ -34,7 +34,7 @@ return array(
     'order_a_car'=>'Order a Car',
     'use_iphone_or_android'=>'Use the iPhone or Android app to request a ride.',
     'driver_comes_you'=>'Your Driver Comes to You',
-    'sit_back_relax'=>'Sit back and relax. We\'ll text you when your Yevaz arrives.',
+    'sit_back_relax'=>'Sit back and relax. We\'ll text you when your Cab arrives.',
     'hopin_hopout'=>'Hop in & Hop out',
     'after_arriving'=>'After arriving at your destination, we\'ll charge your credit card on file and email you a receipt.',
 

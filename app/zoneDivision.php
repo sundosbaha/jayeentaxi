@@ -192,7 +192,9 @@ function walkerTripCompletedUpdateRecords($reqServices, $zone_id, $distance, $ti
 
             $reqService->distance_cost = $price_per_unit_distance;
 
-            $price_per_unit_time = $zoneTypeRecords->price_per_unit_time * ($time-$tripWaitingtime) > -1?($time-$tripWaitingtime):0;
+            $price_per_unit_time = $zoneTypeRecords->price_per_unit_time * (($time-$tripWaitingtime) > -1 ? ($time-$tripWaitingtime) : 0);
+
+
 
             $reqService->time_cost = $price_per_unit_time;
 

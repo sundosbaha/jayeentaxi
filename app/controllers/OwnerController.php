@@ -69,6 +69,366 @@ class OwnerController extends BaseController
         return false;
     }
 
+    public function eta_calculation()
+    {
+
+        $token = Input::get('token');
+        $owner_id = Input::get('id');
+        $pick_lat=Input::get('pick_latitude');
+        $pick_lng=Input::get('pick_longitude');
+        $drop_lat=Input::get('drop_latitude');
+        $drop_lng=Input::get('drop_longitude');
+        $type=Input::get("type");
+
+        if (Input::has('card_id')) {
+            $card_id = Input::get('card_id');
+            Payment::where('owner_id', $owner_id)->update(array('is_default' => 0));
+            Payment::where('owner_id', $owner_id)->where('id', $card_id)->update(array('is_default' => 1));
+        }
+
+        $validator = Validator::make(
+            array(
+                'token' => $token,
+                'owner_id' => $owner_id,
+                'pick_lat'=>$pick_lat,
+                'pick_lng'=>$pick_lng,
+                'drop_lat'=>$drop_lat,
+                'drop_lng'=>$drop_lng,
+                'type'=>$type,
+
+            ), array(
+                'token' => 'required',
+                'owner_id' => 'required|integer',
+                'pick_lat'=>'required',
+                'pick_lng'=>'required',
+                'drop_lat'=>'required',
+                'drop_lng'=>'required',
+                'type'=>'required',
+
+            )
+        );
+
+        if ($validator->fails()) {
+            $error_messages = $validator->messages()->all();
+            $response_array = array('success' => false, 'error' => 'Invalid Input', 'error_code' => 600, 'error_messages' => $error_messages);
+            $response_code = 200;
+        } else {
+            $is_admin = $this->isAdmin($token);
+            if ($owner_data = $this->getOwnerData($owner_id, $token, $is_admin)) {
+                // check for token validity
+                if (is_token_active($owner_data->token_expiry) || $is_admin) {
+                    // Do necessary operations
+
+
+
+
+
+                    $points = $pick_lng . " " . $pick_lat;
+                    $setting_zone = Settings::where('key', 'zone_division')->first();
+                    if ($setting_zone->value == 1) {
+
+                        $zoneRecords = array();
+                        $result = array();
+                        $zoneRecords = getAllZoneList();
+
+
+                        if (empty($zoneRecords)) {
+
+                            $response_array = array('success' => false, 'error' => 'No Service for this Area', 'error_messages' => 'No Service for this Area', 'error_code' => 416);
+
+                            $response_code = 200;
+
+                            return Response::json($response_array, $response_code);
+
+                        } else {
+
+                            $zone = false;
+                            $result['id'] = '';
+                            foreach ($zoneRecords as $key => $zoneList) {
+                                $longitudeZoneArray = array();
+                                $latitudeZoneArray = array();
+
+                                $longitudeZoneArray = zoneLongitudeArrays($zoneList->zone_json);
+                                $latitudeZoneArray = zoneLatitudeArrays($zoneList->zone_json);
+
+                                $zoneCoordinates = array_map("zoneCoordinates", $longitudeZoneArray, $latitudeZoneArray);
+                                $pointLocation = new pointLocation();
+
+                                // The last point's coordinates must be the same as the first one's, to "close the loop"
+                                if ($pointLocation->pointInPolygon($points, $zoneCoordinates)) {
+                                    $result['id'] = $zoneList->id;
+                                    $zones = true;
+                                    break;
+
+                                }
+
+
+                            }
+
+
+                        }
+
+
+                        if (empty($result['id']))
+                        {
+                            $response_array = array('success' => false, 'error' => 'No Service for this Area', 'error_messages' => 'No Service for this Area.', 'error_code' => 416);
+
+                            $response_code = 200;
+
+                            return Response::json($response_array, $response_code);
+                        }
+
+
+                        else if (!empty($result['id']))
+                        {
+
+
+
+                            $zone_type=DB::table("zone_type")->where("type",$type)->where('is_visible',1)->where("zone_id",$result['id'])->whereNull("deleted_at")->first();
+
+
+                            if(empty($zone_type)){
+                                $response_array = array('success' => false, 'error' => 'No Service for this Area', 'error_messages' => 'No Service for this Area.', 'error_code' => 416);
+
+                                $response_code = 200;
+
+                                return Response::json($response_array, $response_code);
+
+                            }else{
+
+                                $car_type=$zone_type;
+                                $car_name=DB::table('walker_type')->where('id',$type)->first();
+
+                            }
+
+                        }
+
+                    }
+
+                    if( !empty( $pick_lat ) && !empty( $pick_lng ) && !empty( $drop_lat ) && !empty( $drop_lng ) ) {
+
+                        $origin = $pick_lat . ',' . $pick_lng;
+                        $destination = $drop_lat . ',' . $drop_lng;
+                        $durationMatrix = returnDurationAndDestination($origin, $destination);
+
+                        /*print_r($durationMatrix);
+                        die("u");
+                        */
+
+                        $settings = Settings::where('key', 'default_distance_unit')->first();
+                        $unit = $settings->value;
+                        $retDistance = (string)convert($durationMatrix['distance'], $unit);
+                        $retDuration = round($durationMatrix['duration'] / 60);
+
+                        /*print_r($retDuration);
+                        die("p")*/;
+                        $distance = $retDistance;
+                        $duration = $retDuration;
+
+                        if($car_type->base_distance >= intval($distance))
+                        {
+                            $cal_distance_price=0;
+                            $cal_time_price=floatval($duration*$car_type->price_per_unit_time);
+                            $cal_total=floatval($car_type->base_price+$cal_time_price);
+                        }
+                        else
+                        {
+                            $dis=floatval($distance-$car_type->base_distance);
+                            $cal_distance_price=floatval($dis*$car_type->price_per_unit_distance);
+                            $cal_time_price=floatval($duration*$car_type->price_per_unit_time);
+                            $cal_total=floatval($car_type->base_price+$cal_time_price+$cal_distance_price);
+
+                        }
+
+
+
+
+                        $response_array=array(
+                            'success'=>true,
+                            'name' => $car_name->name,
+                            'type' => $type,
+                            'base_price' => $car_type->base_price,
+                            'distance_price' => $car_type->price_per_unit_distance,
+                            'time_price' => $car_type->price_per_unit_time,
+                            'base_distance' => $car_type->base_distance,
+                            'cal_distance_price' => $cal_distance_price,
+                            'cal_time_price' => $cal_time_price,
+                            'cal_total' => $cal_total,
+                            'total_duration' => $duration,
+                            'total_distance' => $distance,
+                        );
+                        $response_code=200;
+                        $response = Response::json($response_array, $response_code);
+                        return $response;
+                    }
+
+
+                } else {
+                    $response_array = array('success' => false, 'error' => 'Token Expired', 'error_code' => 620);
+                    $response_code = 200;
+                }
+            } else {
+                if ($is_admin) {
+
+                    $response_array = array('success' => false, 'error' => '' . Config::get('app.generic_keywords.User') . ' ID not Found', 'error_code' => 621);
+                } else {
+                    $response_array = array('success' => false, 'error' => 'Not a valid token', 'error_code' => 622);
+                }
+                $response_code = 200;
+            }
+        }
+
+        $response = Response::json($response_array, $response_code);
+        return $response;
+    }
+
+    public function eta_calculation_20180131()
+    {
+        $token = Input::get('token');
+        $owner_id = Input::get('id');
+        $pick_lat=Input::get('pick_latitude');
+        $pick_lng=Input::get('pick_longitude');
+        $drop_lat=Input::get('drop_latitude');
+        $drop_lng=Input::get('drop_longitude');
+        $type=Input::get("type");
+
+        if (Input::has('card_id')) {
+            $card_id = Input::get('card_id');
+            Payment::where('owner_id', $owner_id)->update(array('is_default' => 0));
+            Payment::where('owner_id', $owner_id)->where('id', $card_id)->update(array('is_default' => 1));
+        }
+
+        $validator = Validator::make(
+            array(
+                'token' => $token,
+                'owner_id' => $owner_id,
+                'pick_lat'=>$pick_lat,
+                'pick_lng'=>$pick_lng,
+                'drop_lat'=>$drop_lat,
+                'drop_lng'=>$drop_lng,
+                'type'=>$type,
+
+            ), array(
+                'token' => 'required',
+                'owner_id' => 'required|integer',
+                'pick_lat'=>'required',
+                'pick_lng'=>'required',
+                'drop_lat'=>'required',
+                'drop_lng'=>'required',
+                'type'=>'required',
+
+            )
+        );
+
+        if ($validator->fails()) {
+            $error_messages = $validator->messages()->all();
+            $response_array = array('success' => false, 'error' => 'Invalid Input', 'error_code' => 600, 'error_messages' => $error_messages);
+            $response_code = 200;
+        } else {
+            $is_admin = $this->isAdmin($token);
+            if ($owner_data = $this->getOwnerData($owner_id, $token, $is_admin)) {
+                // check for token validity
+                if (is_token_active($owner_data->token_expiry) || $is_admin) {
+                    // Do necessary operations
+
+                    if( !empty( $pick_lat ) && !empty( $pick_lng ) && !empty( $drop_lat ) && !empty( $drop_lng ) ) {
+
+                        $origin = $pick_lat . ',' . $pick_lng;
+                        $destination = $drop_lat . ',' . $drop_lng;
+
+                        $durationMatrix = returnDurationAndDestination($origin, $destination);
+
+                        $settings = Settings::where('key', 'default_distance_unit')->first();
+                        $unit = $settings->value;
+                        $retDistance = (string)convert($durationMatrix['distance'], $unit);
+                        $retDuration = round($durationMatrix['duration'] / 60);
+
+
+                        /* $destination_addresses=$durationMatrix['destination_addresses'];
+                         $origin_addresses=$durationMatrix['origin_addresses'];*/
+
+                        $distance = $retDistance;
+                        $duration = $retDuration;
+
+
+                        /*$approx_distance = $retDistance+(rand());
+                        $approx_duration = $retDuration+(rand());*/
+
+                        /*print_r(["dis"=>$distance,"dur"=>$duration,"appr_distance"=>$appr_distance,"appr_duration"=>$appr_duration]);
+                        die()*/;
+
+                        $car_type=DB::table('walker_type')->where('id',$type)->first();
+
+
+
+                        if($car_type->base_distance >= intval($distance))
+                        {
+                            $cal_distance_price=0;
+                            $cal_time_price=floatval($duration*$car_type->price_per_unit_time);
+                            $cal_total=floatval($car_type->base_price+$cal_time_price);
+
+                            /*                            $cal_appr_time_price=floatval($appr_duration*$car_type->price_per_unit_time);
+                                                        $cal_appr_total=floatval($car_type->base_price+$cal_appr_time_price);*/
+                        }
+                        else
+                        {
+                            $dis=floatval($distance-$car_type->base_distance);
+                            $cal_distance_price=floatval($dis*$car_type->price_per_unit_distance);
+                            $cal_time_price=floatval($duration*$car_type->price_per_unit_time);
+                            $cal_total=floatval($car_type->base_price+$cal_time_price+$cal_distance_price);
+
+                            /*                            $appr_dis=floatval($appr_distance-$car_type->base_distance);
+                                                        $cal_appr_distance_price=floatval($appr_dis*$car_type->price_per_unit_distance);
+                                                        $cal_appr_time_price=floatval($appr_duration*$car_type->price_per_unit_time);
+                                                        $cal_appr_total=floatval($car_type->base_price+$cal_appr_time_price+$cal_appr_distance_price);*/
+                        }
+
+                        //find approxmate total
+                        //
+                        $percentage=rand(5,15)/100;
+                        $cal_approx_total=$cal_total+($percentage*$cal_total);
+
+                        // $duration=0;
+                        $response_array=array(
+                            'success'=>true,
+                            'name' => $car_type->name,
+                            'type' => $type,
+                            'base_price' => $car_type->base_price,
+                            'distance_price' => $car_type->price_per_unit_distance,
+                            'time_price' => $car_type->price_per_unit_time,
+                            'base_distance' => $car_type->base_distance,
+                            'total_duration' => $duration != 0 ? $duration : 1 ,
+                            'total_distance' => $distance,
+                            'cal_distance_price' => $cal_distance_price,
+                            'cal_time_price' => $cal_time_price,
+                            'cal_total' => number_format($cal_total,2),
+                            'cal_approx_total' => number_format($cal_approx_total,2),
+
+                        );
+                        $response_code=200;
+                        $response = Response::json($response_array, $response_code);
+                        return $response;
+                    }
+
+
+                } else {
+                    $response_array = array('success' => false, 'error' => 'Token Expired', 'error_code' => 620);
+                    $response_code = 200;
+                }
+            } else {
+                if ($is_admin) {
+
+                    $response_array = array('success' => false, 'error' => '' . Config::get('app.generic_keywords.User') . ' ID not Found', 'error_code' => 621);
+                } else {
+                    $response_array = array('success' => false, 'error' => 'Not a valid token', 'error_code' => 622);
+                }
+                $response_code = 200;
+            }
+        }
+
+        $response = Response::json($response_array, $response_code);
+        return $response;
+    }
     public function getOwnerData($owner_id, $token, $is_admin)
     {
 
@@ -567,7 +927,135 @@ $validator=Validator::make(
         return $response;
     }
 
-    public function apply_promo_code()
+    public function apply_promo_code_previously()
+    {
+        $promo_code = Input::get('promo_code');
+        $token = Input::get('token');
+        $owner_id = Input::get('id');
+
+        $validator = Validator::make(
+            array(
+                'token' => $token,
+                'owner_id' => $owner_id,
+            ), array(
+                'token' => 'required',
+                'owner_id' => 'required|integer',
+            )
+        );
+
+        if ($validator->fails()) {
+            $error_messages = $validator->messages();
+            $response_array = array('success' => false, 'error' => 'Invalid Input', 'error_code' => 600);
+            $response_code = 200;
+        } else {
+
+            $is_admin = $this->isAdmin($token);
+            if ($owner_data = $this->getOwnerData($owner_id, $token, $is_admin)) {
+                // check for token validity
+                if (is_token_active($owner_data->token_expiry) || $is_admin) {
+
+                                $settings = Settings::where('key', 'promotional_code_activation')->first();
+                                $prom_act = $settings->value;
+                                if ($prom_act) {
+
+                                            if ($promos = PromoCodes::where('coupon_code', $promo_code)->where('uses', '>', 0)->where('state', '=', 1)->first()) {
+                                                if ((date("Y-m-d H:i:s") >= date("Y-m-d H:i:s", strtotime(trim($promos->expiry)))) || (date("Y-m-d H:i:s") <= date("Y-m-d H:i:s", strtotime(trim($promos->start_date))))) {
+                                                    $response_array = array('success' => FALSE, 'error' => 'Promotional code is not available.', 'error_code' => 614);
+                                                    $response_code = 200;
+                                                } else {
+
+                                                    $promo_check = UserPromoUse::where('user_id', '=', $owner_id)->where('is_used',0)->count();
+
+                                                    if ($promo_check <= 0) {
+                                                    $promo_is_used = UserPromoUse::where('user_id', '=', $owner_id)->where('is_used',1)->where('code_id', '=', $promos->id)->count();
+
+                                                    if ($promo_is_used) {
+                                                        $response_array = array('success' => FALSE, 'error' => 'Promotional code already used.', 'error_code' => 615);
+                                                        $response_code = 200;
+                                                    } else {
+                                                        $promo_update_counter = PromoCodes::find($promos->id);
+                                                        $promo_update_counter->uses = $promo_update_counter->uses - 1;
+                                                        $promo_update_counter->save();
+
+                                                        $user_promo_entry = new UserPromoUse;
+                                                        $user_promo_entry->code_id = $promos->id;
+                                                        $user_promo_entry->user_id = $owner_id;
+                                                        $user_promo_entry->save();
+
+                                                        $owner = Owner::find($owner_id);
+                                                        $owner->promo_count = $owner->promo_count + 1;
+                                                        $owner->save();
+
+                                                        $user_promocode_add_details=UserPromoUse::where('user_id',$owner_id)->where("code_id",$promos->id)->first();
+
+
+                                                        $owner = Owner::find($owner_id);
+                                                        $code_data = Ledger::where('owner_id', '=', $owner->id)->first();
+                                                        $response_array = array(
+                                                            'success' => true,
+                                                            'error' => 'Promotional code successfully added.',
+                                                            'id' => $owner->id,
+                                                            'first_name' => $owner->first_name,
+                                                            'last_name' => $owner->last_name,
+                                                            'phone' => $owner->phone,
+                                                            'email' => $owner->email,
+                                                            'picture' => $owner->picture,
+                                                            'bio' => $owner->bio,
+                                                            'address' => $owner->address,
+                                                            'state' => $owner->state,
+                                                            'country' => $owner->country,
+                                                            'zipcode' => $owner->zipcode,
+                                                            'login_by' => $owner->login_by,
+                                                            'social_unique_id' => $owner->social_unique_id,
+                                                            'device_token' => $owner->device_token,
+                                                            'device_type' => $owner->device_type,
+                                                            'token' => $owner->token,
+                                                            'referral_code' => $code_data->referral_code,
+                                                            'is_referee' => $owner->is_referee,
+                                                            'promo_count' => $owner->promo_count,
+                                                            'promo_code_add_id' => $user_promocode_add_details->id,
+
+                                                        );
+                                                        $response_code = 200;
+                                                    }
+                                                }else{
+                                                        $response_array = array('success' => FALSE, 'error' => 'Already have Promo code.', 'error_code' => 615);
+                                                        $response_code = 200;
+                                                    }
+
+                                            }
+                                            } else {
+                                                $response_array = array('success' => FALSE, 'error' => 'Promotional code is not available.', 'error_code' => 614);
+                                                $response_code = 200;
+                                            }
+
+                                } else {
+                                    $response_array = array('success' => FALSE, 'error' => 'Promotion feature is not active.', 'error_code' => 617);
+                                    $response_code = 200;
+                                }
+
+
+                } else {
+                    $response_array = array('success' => false, 'error' => 'Token Expired', 'error_code' => 620);
+                    $response_code = 200;
+                }
+            } else {
+                if ($is_admin) {
+                    $response_array = array('success' => false, 'error' => 'Owner ID is not Found', 'error_code' => 621);
+                } else {
+                    $response_array = array('success' => false, 'error' => 'Not a valid token', 'error_code' => 622);
+                }
+                $response_code = 200;
+            }
+        }
+
+        $response = Response::json($response_array, $response_code);
+        return $response;
+
+    }
+
+
+        public function apply_promo_code()
     {
         $promo_code = Input::get('promo_code');
         $token = Input::get('token');
@@ -2454,7 +2942,7 @@ $validator=Validator::make(
                                 $request['time_cost'] = currency_converted($settime_price * $data->time);
                             }
                             $request['setbase_distance'] = $setbase_distance;
-                            $request['total'] = currency_converted($data->total);
+                            $request['total'] = $data->total > 0 ? currency_converted($data->total) : "0.00";
 
                             //Owner spend the Amount of Tips
                             $extraPayment = ExtraPayment::where('request_id', '=', $data->id)->first();
@@ -3693,8 +4181,15 @@ $validator=Validator::make(
                 $datetime2 = new DateTime($owner->otp_endtime);
                 $interval = $datetime2->diff($datetime1);
                 $elapsed = $interval->format('%i');
-                //print_r($interval);
-                //print_r($datetime1);
+
+                /*print_r($datetime1);
+
+                print_r($datetime2);
+
+                print_r($interval);
+
+                print_r($elapsed);
+                die();*/
 
                 if ($elapsed <= 15) {
 

@@ -122,7 +122,7 @@
                 <th>{{ trans('language_changer.base_price'), ' ' , trans('language_changer.distance') }}</th>
                 <th>{{ trans('language_changer.base_price') }}</th>
                 <th>{{ trans('language_changer.price_per_unit_distance') }}</th>
-                <th>{{ trans('language_changer.price_per_unit_time') }}</th>
+                <th>{{ trans('language_changer.price_per_unit_time'),'('.trans('language_changer.minutes').')' }}</th>
                 <th>{{ trans('language_changer.maximum'),' ', trans('language_changer.space') }}</th>
                 <th>{{ trans('language_changer.visibility') }}</th>
                 <th>{{ trans('language_changer.actions') }}</th>
@@ -139,7 +139,7 @@
                     <td><?= $type->base_distance . " " . $unit_set ?></td>
                     <td><?= Config::get('app.generic_keywords.Currency') . " " . sprintf2($type->base_price, 2) ?></td>
                     <td><?= Config::get('app.generic_keywords.Currency') . " " . sprintf2($type->price_per_unit_distance, 2) ?></td>
-                    <td><?= Config::get('app.generic_keywords.Currency') . " " . sprintf2($type->price_per_unit_time, 2) ?></td>
+                    <td><?=  sprintf2($type->price_per_unit_time, 2) ?></td>
                     <td><?= $type->max_size ?></td>
                     <td>
                         <?php

@@ -18,7 +18,7 @@
                             <th>{{ trans('customize.type') }}</th>
                             <th>{{ trans('customize.base_price') }}</th>
                             <th>{{ trans('customize.price_per_unit_distance') }}</th>
-                            <th>{{ trans('customize.price_per_unit_time') }}</th>
+                            <th>{{ trans('customize.price_per_unit_time'),'('.trans('language_changer.minutes').')' }}</th>
                             <th>{{ trans('customize.max_size') }}</th>
                             <th>{{ trans('customize.visible') }}</th>
                         </tr>

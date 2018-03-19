@@ -52,7 +52,7 @@ class DispaController extends BaseController {
 
             }
 
-        }, array('except' => array('login', 'chckuser', 'user_detail', 'all_walkers_xml', 'walkers_xml', 'schedule_trip', 'create_trip', 'set_driver_request', 'canceltrip', 'statustrip', 'eta_type', 'trip_status','cron_job_schdule')));
+        }, array('except' => array('login', 'chckuser','cron_offline_drivers', 'user_detail', 'all_walkers_xml', 'walkers_xml', 'schedule_trip', 'create_trip', 'set_driver_request', 'canceltrip', 'statustrip', 'eta_type', 'trip_status','cron_job_schdule','create_request')));
 
 	}
 	
@@ -745,6 +745,7 @@ public function all_walkers_xml() {
         $walkers = DB::table('walker')
 				->join('walker_type', 'walker.type', '=', 'walker_type.id')
                 ->select('walker_type.name','walker.*')
+                ->whereNull('deleted_at')
                 ->get();
 				$wal='';
 				if($walkers)
@@ -808,6 +809,7 @@ $type=Input::get('type');
 				->where('is_available',1)
 				->where('is_approved',1)
 				->where('type',$type)
+				->whereNull('deleted_at')
                 ->get();
 				
 				if($walkers)
@@ -828,8 +830,12 @@ $type=Input::get('type');
         
         echo json_encode($response);
     }
-	
-	
+
+
+
+
+
+
 	public function schedule_trip()
 	{
 		$phone=Input::get('phone');
@@ -932,28 +938,132 @@ $type=Input::get('type');
 			);
 			$response=send_request($userRegisterURL,$data,'POST');
 			$response=json_decode($response,true);
-			
+
 			if($response['success'])
-			{	
-$user_id=$response['id'];
+			{
+
+$user_id=$response['user'];
 goto mainfuc;
 
 			}
 			else
-			{	
-        	return $response;
+			{
+				$res=DB::table('owner')->where('phone','LIKE','%'.$phone.'%')->first();
+
+				if(!empty($res)){
+					$user_id=$res->id;
+					goto mainfuc;
+				}
 			}
 			}
 			else
 			{
 			mainfuc:
-			DB::table('temp_assign')->insert(
-    ['executive_user_id' => Session::get('user_id'), 'userid' => $user_id,'token' => 'sfjghfjghyiuhrti','schedule_datetime' => $schedule,'usrAddress' => $address,
-	'pickupAddress' => $pick_location,'pickupDetails' => $pick_detail,'destinationAddress' => $drop_location,'destinationDetails' => $drop_detail,
-	'no_of_adults' => $adult,'no_of_children' => $child,'luggages' =>$luggage,'type' => $type,'rideComment' => $ridecomment,'pickupLatitude' => $pick_lati,
-	'pickupLongitude' => $pick_longi,'payment_opt' => 1,'user_timezone' => $user_timezone]);
-	
-	$response['success']=true;
+
+                $longitude=$pick_longi;
+                $latitude=$pick_lati;
+
+                $points = $longitude . " " . $latitude;
+                $setting_zone = Settings::where('key', 'zone_division')->first();
+                if ($setting_zone->value == 1) {
+
+                    $zoneRecords = array();
+                    $result = array();
+                    $zoneRecords = getAllZoneList();
+
+
+                    if (empty($zoneRecords)) {
+
+                        $response = array('success' => false, 'error' => 'No Service for this Area', 'error_messages' => 'No Service for this Area', 'error_code' => 416);
+                        goto res;
+                    } else {
+
+                        $zone = false;
+                        $result['id'] = '';
+                        foreach ($zoneRecords as $key => $zoneList) {
+                            $longitudeZoneArray = array();
+                            $latitudeZoneArray = array();
+
+                            $longitudeZoneArray = zoneLongitudeArrays($zoneList->zone_json);
+                            $latitudeZoneArray = zoneLatitudeArrays($zoneList->zone_json);
+
+                            $zoneCoordinates = array_map("zoneCoordinates", $longitudeZoneArray, $latitudeZoneArray);
+                            $pointLocation = new pointLocation();
+
+                            // The last point's coordinates must be the same as the first one's, to "close the loop"
+                            if ($pointLocation->pointInPolygon($points, $zoneCoordinates)) {
+                                $result['id'] = $zoneList->id;
+                                $zones = true;
+                                break;
+
+                            }
+
+
+                            /*                                die()*/;
+                        }
+
+
+                    }
+
+
+                    if (empty($result['id']))
+                    {
+                        $response = array('success' => false, 'error' => 'No Service for this Area', 'error_messages' => 'No Service for this Area.', 'error_code' => 416);
+
+                        goto res;
+                    }else{
+                        DB::table('temp_assign')->insert(
+                            ['executive_user_id' => Session::get('user_id'), 'userid' => $user_id,
+                                'token' => 'sfjghfjghyiuhrti',
+                                'schedule_datetime' => $schedule,
+                                'usrAddress' => $address,
+                                'pickupAddress' => $pick_location,
+                                'pickupDetails' => $pick_detail,'destinationAddress' => $drop_location,
+                                'destinationDetails' => $drop_detail,
+                                'no_of_adults' => $adult,
+                                'no_of_children' => $child,
+                                'luggages' =>$luggage,
+                                'type' => $type,
+                                'rideComment' => $ridecomment,
+                                'pickupLatitude' => $pick_lati,
+                                'pickupLongitude' => $pick_longi,
+                                'drop_latitude' => $drop_lati,
+                                'drop_longitude' => $drop_longi,
+                                'payment_opt' => 1,
+                                'user_timezone' => $user_timezone
+                            ]);
+
+                        $response['success']=true;
+                        goto res;
+                    }
+
+                }else{
+                    DB::table('temp_assign')->insert(
+                        ['executive_user_id' => Session::get('user_id'), 'userid' => $user_id,
+                            'token' => 'sfjghfjghyiuhrti',
+                            'schedule_datetime' => $schedule,
+                            'usrAddress' => $address,
+                            'pickupAddress' => $pick_location,
+                            'pickupDetails' => $pick_detail,'destinationAddress' => $drop_location,
+                            'destinationDetails' => $drop_detail,
+                            'no_of_adults' => $adult,
+                            'no_of_children' => $child,
+                            'luggages' =>$luggage,
+                            'type' => $type,
+                            'rideComment' => $ridecomment,
+                            'pickupLatitude' => $pick_lati,
+                            'pickupLongitude' => $pick_longi,
+                            'drop_latitude' => $drop_lati,
+                            'drop_longitude' => $drop_longi,
+
+                            'payment_opt' => 1,
+                            'user_timezone' => $user_timezone
+                        ]);
+
+                    $response['success']=true;
+                    goto res;
+                }
+                res:
 	return $response;
 	
 			}
@@ -1068,6 +1178,12 @@ goto mainfuc;
 			}
 			else
 			{
+				$res=DB::table('owner')->where('phone','LIKE','%'.$phone.'%')->first();
+
+				if(!empty($res)){
+					$user_id=$res->id;
+					goto mainfuc;
+				}
 				$response['userid']="";	
         	return $response;
 			}
@@ -1397,6 +1513,68 @@ goto mainfuc;
 
     }
 
+    public function cron_offline_drivers(){
+
+        $current_time=(new DateTime())->format('Y-m-d h:i:00');
+        $two_hour_before=date('Y-m-d H:i:00', strtotime('-2 hour'));
+
+        $walkers = DB::select(DB::raw("SELECT 
+                        id
+                             FROM walker 
+                                   WHERE 
+                                          '".$two_hour_before."'
+                                            >
+                                            DATE_FORMAT(updated_at,'%Y-%m-%d %h:%i:%s')
+                                          
+  
+                                          and deleted_at IS NULL and is_available =1
+                                          and is_approved =1
+                                           and is_active =1"));
+
+
+        $array_walker_id=array();
+
+        foreach($walkers as $walk){
+            array_push($array_walker_id,$walk->id);
+        }
+
+        
+
+
+        DB::table('walker')->whereIn('id', $array_walker_id)->where("is_available",1)->Update(['is_active'=>0]);
+
+        $walker_details=DB::table('walker')->whereIN('id',$array_walker_id)->select("id","is_available","is_active","is_approved","device_type")->whereNull("deleted_at")->where("device_type",'android')->where("is_available",1)->get();
+
+        if(!empty($walker_details)) {
+
+                foreach ($walker_details as $walk_de){
+
+                    $msg_array = array();
+
+
+                    $msg_array['success'] = True;
+
+                    $msg_array['is_approved'] = $walk_de->is_approved;
+
+                    $msg_array['is_available'] = $walk_de->is_active;
+
+                    $msg_array['in_free'] = $walk_de->is_available;
+
+                    $msg_array['is_active_txt'] = "offline";
+
+                    $msg_array['unique_id'] = 8;
+
+                    $title=trans('language_changer.you_are_offline');
+
+                    send_notifications($walk_de->id, "walker", $title, $msg_array);
+
+                    unset($msg_array);
+
+                }            
+
+        }
+
+    }
 
     public function cron_job_schdule()
     {
@@ -1407,6 +1585,9 @@ BETWEEN
 DATE_FORMAT(DATE_SUB(CONVERT_TZ(NOW(),@@session.time_zone,user_timezone), INTERVAL 30 MINUTE),'%m-%d-%Y %h:%i')
 AND  
 DATE_FORMAT(DATE_ADD(CONVERT_TZ(NOW(),@@session.time_zone,user_timezone), INTERVAL 30 MINUTE),'%m-%d-%Y %h:%i') and is_cancelled=0"));
+
+
+
 
         foreach ($Users as $user) {
             if ($user->tolerance <= 5) {
@@ -1470,8 +1651,35 @@ DATE_FORMAT(DATE_ADD(CONVERT_TZ(NOW(),@@session.time_zone,user_timezone), INTERV
 
     }
 
-    public function create_request($request)
+    public function create_request_old($request)
     {
+
+
+        /*$token = "2y10MC120m5Mq0m9iaObLftorVfvR4Ug7sld9f7nT1r6QK0whEVu";
+
+        $owner_id = "58";
+
+        $latitude = "31.944303";
+
+        $longitude = "35.929284";
+
+        $d_latitude = "";
+
+        $d_longitude = "";
+
+        $pickupDetails = "";
+
+        $dropoffDetails = "";
+
+        $adultCount = "";
+
+        $childCount = "";
+
+        $lugaggeCount = "";
+
+        $rideComments = "";
+        $executive_id="";*/
+
 
 
         $token = $request['token'];
@@ -1498,7 +1706,7 @@ DATE_FORMAT(DATE_ADD(CONVERT_TZ(NOW(),@@session.time_zone,user_timezone), INTERV
 
         $rideComments = $request['rideComments'];
 
-        //$executive_id=$request['executive_user_id'];
+        $executive_id=!empty($request['executive_user_id']) ?  $request['executive_user_id'] : 0;
 
 
         $payment_opt = 0;
@@ -1509,6 +1717,7 @@ DATE_FORMAT(DATE_ADD(CONVERT_TZ(NOW(),@@session.time_zone,user_timezone), INTERV
 
 
         $payment_opt = $request['payment_opt'];
+
 
 
         $validator = Validator::make(
@@ -1657,12 +1866,93 @@ DATE_FORMAT(DATE_ADD(CONVERT_TZ(NOW(),@@session.time_zone,user_timezone), INTERV
 
                           } */
 
-                        if ($request['type']) {
 
+                        if ($request_type) {
 
                             Log::info('out');
 
-                            $type = $request['type'];
+                            $type = $request_type;
+
+
+
+                            $points = array();
+                            $points = $longitude . " " . $latitude;
+
+                            //Zone Division enable checking
+                            $setting_zone = Settings::where('key', 'zone_division')->first();
+
+                            if ($setting_zone->value == 1) {
+
+                                $zoneRecords = array();
+                                $result = array();
+                                $zoneRecords = getAllZoneList();
+
+                                /*echo "<pre>";
+                                print_r($zoneRecords);
+                                exit;*/
+
+                                if (empty($zoneRecords)) {
+
+                                    $response_array = array('success' => false, 'error' => 'Tipo de Servicio no encontrado', 'error_messages' => 'No Service for this Area', 'error_code' => 416);
+
+                                    $response_code = 200;
+
+                                    return Response::json($response_array, $response_code);
+
+                                } else {
+
+
+                                    $zone = false;
+
+                                    foreach ($zoneRecords as $key => $zoneList) {
+                                        //$results['id'] = '';
+                                        $longitudeZoneArray = array();
+                                        $latitudeZoneArray = array();
+
+                                        $longitudeZoneArray = zoneLongitudeArrays($zoneList->zone_json);
+                                        $latitudeZoneArray = zoneLatitudeArrays($zoneList->zone_json);
+
+                                        $zoneCoordinates = array_map("zoneCoordinates", $longitudeZoneArray, $latitudeZoneArray);
+                                        $pointLocation = new pointLocation();
+
+                                        // The last point's coordinates must be the same as the first one's, to "close the loop"
+                                        if ($pointLocation->pointInPolygon($points, $zoneCoordinates)) {
+                                            $result = $zoneList->id;
+                                            $zones = true;
+                                            break;
+
+                                        }
+
+                                    }
+                                }
+
+                                /*print_r($result);
+
+                                die('p');*/
+
+                                if (!empty($result)) {
+
+                                    $zone_id = $result;
+
+                                } else {
+                                    //send notification for owner
+
+                                    send_notifications($owner_id, "owner", 'No ' . Config::get('app.generic_keywords.Provider') . ' Found', 'No ' . Config::get('app.generic_keywords.Provider') . ' found matching the service type.');
+
+                                    $response_array = array('success' => false, 'error' => 'Tipo de Servicio no encontrado', 'error_messages' => 'No ' . Config::get('app.generic_keywords.Provider') . ' found matching the service type.', 'error_code' => 416);
+
+                                    $response_code = 200;
+
+                                    return Response::json($response_array, $response_code);
+
+                                }
+
+                            }
+
+
+
+
+
 
                             if (!$type) {
 
@@ -1775,9 +2065,10 @@ DATE_FORMAT(DATE_ADD(CONVERT_TZ(NOW(),@@session.time_zone,user_timezone), INTERV
 
                                 . "sin( radians(latitude) ) ) ) ,8) <= $distance and "
 
-                                . "walker.deleted_at IS NULL and "
+                           //     . "walker.deleted_at IS NULL and "
+                                . "walker.deleted_at IS NULL  "
 
-                                . "walker.id IN($typestring) "
+                        //        . "walker.id IN($typestring) "
 
                                 . "order by distance";
 
@@ -2144,6 +2435,10 @@ DATE_FORMAT(DATE_ADD(CONVERT_TZ(NOW(),@@session.time_zone,user_timezone), INTERV
 
                             }
 
+                            if ($setting_zone->value == 1) {
+
+                                $request->zone_id = $zone_id;
+                            }
                             /* $request->request_start_time = date("Y-m-d H:i:s"); */
 
                             $request->request_start_time = $date_time;
@@ -2862,6 +3157,1561 @@ DATE_FORMAT(DATE_ADD(CONVERT_TZ(NOW(),@@session.time_zone,user_timezone), INTERV
 
 
     }
+
+    public function create_request($request)
+    {
+
+
+        $token = $request['token'];
+
+        $owner_id = $request['id'];
+
+        $latitude = $request['latitude'];
+
+        $longitude = $request['longitude'];
+
+        $d_latitude = $request['d_latitude'];
+
+        $d_longitude = $request['d_longitude'];
+
+        $pickupDetails = $request['pickupDetails'];
+
+        $dropoffDetails = $request['dropoffDetails'];
+
+        $adultCount = $request['adultCount'];
+
+        $childCount = $request['childCount'];
+
+        $lugaggeCount = $request['lugaggeCount'];
+
+        $rideComments = $request['rideComments'];
+
+        //$executive_id=$request['executive_user_id'];
+
+
+        $payment_opt = 0;
+
+        $request_type=$request['type'];
+
+/*print_r($request_type);
+        die();*/
+
+
+        $payment_opt = $request['payment_opt'];
+
+
+        $validator = Validator::make(
+
+            array(
+
+                'token' => $token,
+
+                'owner_id' => $owner_id,
+
+                'latitude' => $latitude,
+
+                'longitude' => $longitude,
+
+            ), array(
+
+                'token' => 'required',
+
+                'owner_id' => 'required|integer',
+
+                'latitude' => 'required',
+
+                'longitude' => 'required',
+
+            )
+
+        );
+
+
+        /* $var = Keywords::where('id', 2)->first(); */
+
+
+        if ($validator->fails()) {
+
+            $error_messages = $validator->messages()->all();
+
+            $response_array = array('success' => false, 'error' => 'Entrada invalida', 'error_code' => 401, 'error_messages' => $error_messages);
+
+            $response_code = 200;
+
+        } else {
+
+
+            $is_admin = $this->isAdmin($token);
+
+            $unit = "";
+
+            $driver_data = "";
+
+
+
+
+            if (true) {
+
+                // check for token validity
+
+
+                if (true) {
+
+
+                    /* SEND REFERRAL & PROMO INFO */
+
+                    $settings = Settings::where('key', 'referral_code_activation')->first();
+
+                    $referral_code_activation = $settings->value;
+
+                    if ($referral_code_activation) {
+
+                        $referral_code_activation_txt = "referral on";
+
+                    } else {
+
+                        $referral_code_activation_txt = "referral off";
+
+                    }
+
+
+                    $settings = Settings::where('key', 'promotional_code_activation')->first();
+
+                    $promotional_code_activation = $settings->value;
+
+                    if ($promotional_code_activation) {
+
+                        $promotional_code_activation_txt = "promo on";
+
+                    } else {
+
+                        $promotional_code_activation_txt = "promo off";
+
+                    }
+
+                    /* SEND REFERRAL & PROMO INFO */
+
+                    // Do necessary operations
+
+                    recheck:
+
+                    $request = DB::table('request')->where('owner_id', $owner_id)
+                        ->where('is_completed', 0)
+                        ->where('is_cancelled', 0)
+                        ->where('current_walker', '!=', 0)
+                        ->first();
+
+
+                    if ($request) {
+
+                        DB::table('request')->where('id', $request->id)->update(['is_cancelled' => 1, 'owner_reason' => 'network problem']);
+
+                        goto recheck;
+
+                        //goto DontcreateReq;
+
+
+                    } else {
+
+                        /* SEND REFERRAL & PROMO INFO */
+
+
+                        if ($payment_opt != 1) {
+
+                            $card_count = Payment::where('owner_id', '=', $owner_id)->count();
+
+                            if ($card_count <= 0) {
+
+                                $response_array = array('success' => false, 'error' => "Please add card first for payment.", 'error_code' => 417);
+
+                                $response_code = 200;
+
+                                $response = Response::json($response_array, $response_code);
+
+                                return $response;
+
+                            }
+
+                        }
+
+                        /* if ($owner_data->debt > 0) {
+
+                          $response_array = array('success' => false, 'error' => "You are already in \$$owner_data->debt debt", 'error_code' => 417);
+
+                          $response_code = 200;
+
+                          $response = Response::json($response_array, $response_code);
+
+                          return $response;
+
+                          } */
+
+                        if ($request['type']) {
+
+                            Log::info('out');
+
+                            $type = $request['type'];
+
+                            $points = array();
+                            $points = $longitude . " " . $latitude;
+
+                            //Zone Division enable checking
+                            $setting_zone = Settings::where('key', 'zone_division')->first();
+
+                            if ($setting_zone->value == 1) {
+
+                                $zoneRecords = array();
+                                $result = array();
+                                $zoneRecords = getAllZoneList();
+
+                                /*echo "<pre>";
+                                print_r($zoneRecords);
+                                exit;*/
+
+                                if (empty($zoneRecords)) {
+
+                                    $response_array = array('success' => false, 'error' => 'Tipo de Servicio no encontrado', 'error_messages' => 'No Service for this Area', 'error_code' => 416);
+
+                                    $response_code = 200;
+
+                                    return Response::json($response_array, $response_code);
+
+                                } else {
+
+                                    $zone = false;
+
+                                    foreach ($zoneRecords as $key => $zoneList) {
+                                        $results['id'] = '';
+                                        $longitudeZoneArray = array();
+                                        $latitudeZoneArray = array();
+
+                                        $longitudeZoneArray = zoneLongitudeArrays($zoneList->zone_json);
+                                        $latitudeZoneArray = zoneLatitudeArrays($zoneList->zone_json);
+
+                                        $zoneCoordinates = array_map("zoneCoordinates", $longitudeZoneArray, $latitudeZoneArray);
+                                        $pointLocation = new pointLocation();
+
+                                        // The last point's coordinates must be the same as the first one's, to "close the loop"
+                                        if ($pointLocation->pointInPolygon($points, $zoneCoordinates)) {
+                                            $result['id'] = $zoneList->id;
+                                            $zones = true;
+                                            break;
+
+                                        }
+
+                                    }
+                                }
+
+                                if (!empty($result['id'])) {
+
+                                    $zone_id = $result['id'];
+
+                                } else {
+                                    //send notification for owner
+
+                                    send_notifications($owner_id, "owner", 'No ' . Config::get('app.generic_keywords.Provider') . ' Found', 'No ' . Config::get('app.generic_keywords.Provider') . ' found matching the service type.');
+
+                                    $response_array = array('success' => false, 'error' => 'Tipo de Servicio no encontrado', 'error_messages' => 'No ' . Config::get('app.generic_keywords.Provider') . ' found matching the service type.', 'error_code' => 416);
+
+                                    $response_code = 200;
+
+                                    return Response::json($response_array, $response_code);
+
+                                }
+
+                            }
+
+
+
+
+
+
+                            if (!$type) {
+
+                                // choose default type
+
+                                $provider_type = ProviderType::where('is_default', 1)->first();
+
+
+                                if (!$provider_type) {
+
+                                    $type = 1;
+
+                                } else {
+
+                                    $type = $provider_type->id;
+
+                                }
+
+                            }
+
+
+                            $typequery = "SELECT distinct provider_id from walker_services where type IN($type)";
+
+                            $typewalkers = DB::select(DB::raw($typequery));
+
+
+                            Log::info('typewalkers = ' . print_r($typewalkers, true));
+
+
+                            if (count($typewalkers) > 0) {
+
+
+                                foreach ($typewalkers as $key) {
+
+
+                                    $types[] = $key->provider_id;
+
+                                }
+
+
+                                $typestring = implode(",", $types);
+
+                                Log::info('typestring = ' . print_r($typestring, true));
+
+                            } else {
+
+                                /* $driver = Keywords::where('id', 1)->first();
+
+                                  send_notifications($owner_id, "owner", 'No ' . $driver->keyword . ' Found', 'No ' . $driver->keyword . ' found matching the service type.'); */
+
+                                send_notifications($owner_id, "owner", 'No ' . Config::get('app.generic_keywords.Provider') . ' Found', 'No ' . Config::get('app.generic_keywords.Provider') . ' found matching the service type.');
+
+
+                                /* $response_array = array('success' => false, 'error' => 'No ' . $driver->keyword . ' found matching the service type.', 'error_code' => 416); */
+
+                                $response_array = array('success' => false, 'error' => 'Tipo de Servicio no encontrado', 'error_messages' => 'No ' . Config::get('app.generic_keywords.Provider') . ' found matching the service type.', 'error_code' => 416);
+
+                                $response_code = 200;
+
+                                return Response::json($response_array, $response_code);
+
+                            }
+
+
+                            $settings = Settings::where('key', 'default_search_radius')->first();
+
+                            $distance = $settings->value;
+
+                            $settings = Settings::where('key', 'default_distance_unit')->first();
+
+                            $unit = $settings->value;
+
+                            if ($unit == 0) {
+
+                                $multiply = 1.609344;
+
+                            } elseif ($unit == 1) {
+
+                                $multiply = 1;
+
+                            }
+
+                            $query = "SELECT walker.*, "
+
+                                . "ROUND(" . $multiply . " * 3956 * acos( cos( radians('$latitude') ) * "
+
+                                . "cos( radians(latitude) ) * "
+
+                                . "cos( radians(longitude) - radians('$longitude') ) + "
+
+                                . "sin( radians('$latitude') ) * "
+
+                                . "sin( radians(latitude) ) ) ,8) as distance "
+
+                                . "FROM walker "
+
+                                . "where is_available = 1 and "
+
+                                . "is_active = 1 and "
+
+                                . "is_approved = 1 and "
+
+                                . "ROUND((" . $multiply . " * 3956 * acos( cos( radians('$latitude') ) * "
+
+                                . "cos( radians(latitude) ) * "
+
+                                . "cos( radians(longitude) - radians('$longitude') ) + "
+
+                                . "sin( radians('$latitude') ) * "
+
+                                . "sin( radians(latitude) ) ) ) ,8) <= $distance and "
+
+                                //     . "walker.deleted_at IS NULL and "
+                                . "walker.deleted_at IS NULL  "
+
+                                //        . "walker.id IN($typestring) "
+
+                                . "order by distance";
+
+                            $walkers = DB::select(DB::raw($query));
+
+                            $walker_list = array();
+
+
+                            $owner = Owner::find($owner_id);
+
+                            $owner->latitude = $latitude;
+
+                            $owner->longitude = $longitude;
+
+                            $owner->save();
+
+
+                            $request = new Requests;
+
+                            $request->owner_id = $owner_id;
+
+                            $request->payment_mode = $payment_opt;
+
+                            $request->pickupDetails = $pickupDetails;
+
+                            $request->dropoffDetails = $dropoffDetails;
+
+                            $request->adultCount = $adultCount;
+
+                            $request->childCount = $childCount;
+
+                            $request->lugaggeCount = $lugaggeCount;
+
+                            $request->rideComments = $rideComments;
+
+                            $request->executive_id = $executive_id;
+
+                            if (Input::has('promo_code')) {
+
+                                $promo_code = Input::get('promo_code');
+
+                                $payment_mode = 0;
+
+                                $payment_mode = $payment_opt;
+
+
+                                $settings = Settings::where('key', 'promotional_code_activation')->first();
+
+                                $prom_act = $settings->value;
+
+                                if ($prom_act) {
+
+                                    if ($payment_mode == 0) {
+
+                                        $settings = Settings::where('key', 'get_promotional_profit_on_card_payment')->first();
+
+                                        $prom_act_card = $settings->value;
+
+                                        if ($prom_act_card) {
+
+                                            if ($promos = PromoCodes::where('coupon_code', $promo_code)->where('uses', '>', 0)->where('state', '=', 1)->first()) {
+
+                                                if ((date("Y-m-d H:i:s") >= date("Y-m-d H:i:s", strtotime(trim($promos->expiry)))) || (date("Y-m-d H:i:s") <= date("Y-m-d H:i:s", strtotime(trim($promos->start_date))))) {
+
+                                                    $response_array = array('success' => FALSE, 'error' => 'Promotional code is not available', 'error_code' => 505);
+
+                                                    $response_code = 200;
+
+                                                    return Response::json($response_array, $response_code);
+
+                                                } else {
+
+                                                    $promo_is_used = UserPromoUse::where('user_id', '=', $owner_id)->where('code_id', '=', $promos->id)->count();
+
+                                                    if ($promo_is_used) {
+
+                                                        $response_array = array('success' => FALSE, 'error' => 'Promotional code already used.', 'error_code' => 512);
+
+                                                        $response_code = 200;
+
+                                                        return Response::json($response_array, $response_code);
+
+                                                    } else {
+
+                                                        $promo_update_counter = PromoCodes::find($promos->id);
+
+                                                        $promo_update_counter->uses = $promo_update_counter->uses - 1;
+
+                                                        $promo_update_counter->save();
+
+
+                                                        $user_promo_entry = new UserPromoUse;
+
+                                                        $user_promo_entry->code_id = $promos->id;
+
+                                                        $user_promo_entry->user_id = $owner_id;
+
+                                                        $user_promo_entry->save();
+
+
+                                                        $owner = Owner::find($owner_id);
+
+                                                        $owner->promo_count = $owner->promo_count + 1;
+
+                                                        $owner->save();
+
+
+                                                        $request->promo_id = $promos->id;
+
+                                                        $request->promo_code = $promos->coupon_code;
+
+                                                    }
+
+                                                }
+
+                                            } else {
+
+                                                $response_array = array('success' => FALSE, 'error' => 'Promotional code is not available', 'error_code' => 505);
+
+                                                $response_code = 200;
+
+                                                return Response::json($response_array, $response_code);
+
+                                            }
+
+                                        } else {
+
+                                            $response_array = array('success' => FALSE, 'error' => 'Promotion feature is not active on card payment.', 'error_code' => 505);
+
+                                            $response_code = 200;
+
+                                            return Response::json($response_array, $response_code);
+
+                                        }
+
+                                    } else if (($payment_mode == 1)) {
+
+                                        $settings = Settings::where('key', 'get_promotional_profit_on_cash_payment')->first();
+
+                                        $prom_act_cash = $settings->value;
+
+                                        if ($prom_act_cash) {
+
+                                            if ($promos = PromoCodes::where('coupon_code', $promo_code)->where('uses', '>', 0)->where('state', '=', 1)->first()) {
+
+                                                if ((date("Y-m-d H:i:s") >= date("Y-m-d H:i:s", strtotime(trim($promos->expiry)))) || (date("Y-m-d H:i:s") <= date("Y-m-d H:i:s", strtotime(trim($promos->start_date))))) {
+
+                                                    $response_array = array('success' => FALSE, 'error' => 'Promotional code is not available', 'error_code' => 505);
+
+                                                    $response_code = 200;
+
+                                                    return Response::json($response_array, $response_code);
+
+                                                } else {
+
+                                                    $promo_is_used = UserPromoUse::where('user_id', '=', $owner_id)->where('code_id', '=', $promos->id)->count();
+
+                                                    if ($promo_is_used) {
+
+                                                        $response_array = array('success' => FALSE, 'error' => 'Promotional code already used.', 'error_code' => 512);
+
+                                                        $response_code = 200;
+
+                                                        return Response::json($response_array, $response_code);
+
+                                                    } else {
+
+                                                        $promo_update_counter = PromoCodes::find($promos->id);
+
+                                                        $promo_update_counter->uses = $promo_update_counter->uses - 1;
+
+                                                        $promo_update_counter->save();
+
+
+                                                        $user_promo_entry = new UserPromoUse;
+
+                                                        $user_promo_entry->code_id = $promos->id;
+
+                                                        $user_promo_entry->user_id = $owner_id;
+
+                                                        $user_promo_entry->save();
+
+
+                                                        $owner = Owner::find($owner_id);
+
+                                                        $owner->promo_count = $owner->promo_count + 1;
+
+                                                        $owner->save();
+
+
+                                                        $request->promo_id = $promos->id;
+
+                                                        $request->promo_code = $promos->coupon_code;
+
+                                                    }
+
+                                                }
+
+                                            } else {
+
+                                                $response_array = array('success' => FALSE, 'error' => 'Promotional code is not available', 'error_code' => 505);
+
+                                                $response_code = 200;
+
+                                                return Response::json($response_array, $response_code);
+
+                                            }
+
+                                        } else {
+
+                                            $response_array = array('success' => FALSE, 'error' => 'Promotion feature is not active on cash payment.', 'error_code' => 505);
+
+                                            $response_code = 200;
+
+                                            return Response::json($response_array, $response_code);
+
+                                        }
+
+                                    }/* else {
+
+                                      $response_array = array('success' => FALSE, 'error' => 'Payment mode is paypal', 'error_code' => 505);
+
+                                      $response_code = 200;
+
+                                      return Response::json($response_array, $response_code);
+
+                                      } */
+
+                                } else {
+
+                                    $response_array = array('success' => FALSE, 'error' => 'Promotion feature is not active.', 'error_code' => 505);
+
+                                    $response_code = 200;
+
+                                    return Response::json($response_array, $response_code);
+
+                                }
+
+
+                                /* $pcode = PromoCodes::where('coupon_code', Input::get('promo_code'))->first();
+
+
+
+                                  if ($pcode) {
+
+                                  // promo history
+
+                                  $promohistory = PromoHistory::where('user_id', $owner_id)->where('promo_code', Input::get('promo_code'))->first();
+
+                                  if (!$promohistory) {
+
+                                  if (date("Y-m-d H:i:s") >= date("Y-m-d H:i:s", strtotime(trim($pcode->expiry)))) {
+
+                                  $response_array = array('success' => false, 'Promo Code already Expired', 'error_code' => 425);
+
+                                  $response_code = 200;
+
+                                  return Response::json($response_array, $response_code);
+
+                                  } else {
+
+                                  $request->promo_code = $pcode->id;
+
+                                  if ($pcode->uses == 1) {
+
+                                  $pcode->status = 3;
+
+                                  }
+
+                                  $pcode->uses = $pcode->uses - 1;
+
+                                  $pcode->save();
+
+                                  $phist = new PromoHistory();
+
+                                  $phist->user_id = $owner_id;
+
+                                  $phist->promo_code = Input::get('promo_code');
+
+                                  $phist->amount_earned = $pcode->value;
+
+                                  $phist->save();
+
+                                  if ($pcode->type == 2) {
+
+                                  // Absolute discount
+
+                                  // Add to ledger amount
+
+                                  $led = Ledger::where('owner_id', $owner_id)->first();
+
+                                  if ($led) {
+
+                                  $led->amount_earned = $led->amount_earned + $pcode->value;
+
+                                  $led->save();
+
+                                  } else {
+
+                                  $ledger = new Ledger();
+
+                                  $ledger->owner_id = $owner_id;
+
+                                  $ledger->referral_code = "0";
+
+                                  $ledger->total_referrals = 0;
+
+                                  $ledger->amount_earned = $pcode->value;
+
+                                  $ledger->amount_spent = 0;
+
+                                  $ledger->save();
+
+                                  }
+
+                                  }
+
+                                  }
+
+                                  } else {
+
+                                  $response_array = array('success' => false, 'Promo Code already Used', 'error_code' => 425);
+
+                                  $response_code = 200;
+
+                                  return Response::json($response_array, $response_code);
+
+                                  }
+
+                                  } else {
+
+                                  $response_array = array('success' => false, 'Invalid Promo Code', 'error_code' => 415);
+
+                                  $response_code = 200;
+
+                                  return Response::json($response_array, $response_code);
+
+                                  } */
+
+                            }
+
+
+                            $user_timezone = $owner->timezone;
+
+                            $default_timezone = Config::get('app.timezone');
+
+                            /* $offset = $this->get_timezone_offset($default_timezone, $user_timezone); */
+
+                            $date_time = get_user_time($default_timezone, $user_timezone, date("Y-m-d H:i:s"));
+
+                            $request->D_latitude = 0;
+
+                            if (isset($d_latitude)) {
+
+                                $request->D_latitude = $request['d_latitude'];
+
+                            }
+
+                            $request->D_longitude = 0;
+
+                            if (isset($d_longitude)) {
+
+                                $request->D_longitude = $request['d_longitude'];
+
+                            }
+
+                            if ($setting_zone->value == 1) {
+
+                                $request->zone_id = $zone_id;
+                            }
+                            /* $request->request_start_time = date("Y-m-d H:i:s"); */
+
+                            $request->request_start_time = $date_time;
+
+                            $request->save();
+
+
+                            $reqserv = new RequestServices;
+
+                            $reqserv->request_id = $request->id;
+
+                            $reqserv->type = ''.$request_type;
+
+                            $reqserv->save();
+
+                        } else {
+
+                            Log::info('in');
+
+                            $type = $request['type'];
+
+                            $points = array();
+                            $points = $longitude . " " . $latitude;
+
+                            //Zone Division enable checking
+                            $setting_zone = Settings::where('key', 'zone_division')->first();
+
+                            if ($setting_zone->value == 1) {
+
+                                $zoneRecords = array();
+                                $result = array();
+                                $zoneRecords = getAllZoneList();
+
+                                /*echo "<pre>";
+                                print_r($zoneRecords);
+                                exit;*/
+
+                                if (empty($zoneRecords)) {
+
+                                    $response_array = array('success' => false, 'error' => 'Tipo de Servicio no encontrado', 'error_messages' => 'No Service for this Area', 'error_code' => 416);
+
+                                    $response_code = 200;
+
+                                    return Response::json($response_array, $response_code);
+
+                                } else {
+
+                                    $zone = false;
+
+                                    foreach ($zoneRecords as $key => $zoneList) {
+                                        $results['id'] = '';
+                                        $longitudeZoneArray = array();
+                                        $latitudeZoneArray = array();
+
+                                        $longitudeZoneArray = zoneLongitudeArrays($zoneList->zone_json);
+                                        $latitudeZoneArray = zoneLatitudeArrays($zoneList->zone_json);
+
+                                        $zoneCoordinates = array_map("zoneCoordinates", $longitudeZoneArray, $latitudeZoneArray);
+                                        $pointLocation = new pointLocation();
+
+                                        // The last point's coordinates must be the same as the first one's, to "close the loop"
+                                        if ($pointLocation->pointInPolygon($points, $zoneCoordinates)) {
+                                            $result['id'] = $zoneList->id;
+                                            $zones = true;
+                                            break;
+
+                                        }
+
+                                    }
+                                }
+
+                                if (!empty($result['id'])) {
+
+                                    $zone_id = $result['id'];
+
+                                } else {
+                                    //send notification for owner
+
+                                    send_notifications($owner_id, "owner", 'No ' . Config::get('app.generic_keywords.Provider') . ' Found', 'No ' . Config::get('app.generic_keywords.Provider') . ' found matching the service type.');
+
+                                    $response_array = array('success' => false, 'error' => 'Tipo de Servicio no encontrado', 'error_messages' => 'No ' . Config::get('app.generic_keywords.Provider') . ' found matching the service type.', 'error_code' => 416);
+
+                                    $response_code = 200;
+
+                                    return Response::json($response_array, $response_code);
+
+                                }
+
+                            }
+
+
+
+
+
+
+
+                            $settings = Settings::where('key', 'default_search_radius')->first();
+
+                            $distance = $settings->value;
+
+                            $settings = Settings::where('key', 'default_distance_unit')->first();
+
+                            $unit = $settings->value;
+
+                            if ($unit == 0) {
+
+                                $multiply = 1.609344;
+
+                            } elseif ($unit == 1) {
+
+                                $multiply = 1;
+
+                            }
+
+                            $query = "SELECT walker.*, "
+
+                                . "ROUND(" . $multiply . " * 3956 * acos( cos( radians('$latitude') ) * "
+
+                                . "cos( radians(latitude) ) * "
+
+                                . "cos( radians(longitude) - radians('$longitude') ) + "
+
+                                . "sin( radians('$latitude') ) * "
+
+                                . "sin( radians(latitude) ) ) ,8) as distance "
+
+                                . "FROM walker "
+
+                                . "where is_available = 1 and "
+
+                                . "is_active = 1 and "
+
+                                . "is_approved = 1 and "
+
+                                . "ROUND((" . $multiply . " * 3956 * acos( cos( radians('$latitude') ) * "
+
+                                . "cos( radians(latitude) ) * "
+
+                                . "cos( radians(longitude) - radians('$longitude') ) + "
+
+                                . "sin( radians('$latitude') ) * "
+
+                                . "sin( radians(latitude) ) ) ) ,8) <= $distance and "
+
+                                . "walker.deleted_at IS NULL  "
+
+                                . "order by distance";
+
+                            $walkers = DB::select(DB::raw($query));
+
+                            $walker_list = array();
+
+
+                            $owner = Owner::find($owner_id);
+
+                            $owner->latitude = $latitude;
+
+                            $owner->longitude = $longitude;
+
+                            $owner->save();
+
+
+                            $request = new Requests;
+
+                            $request->owner_id = $owner_id;
+
+                            $request->payment_mode = $payment_opt;
+
+
+                            if (Input::has('promo_code')) {
+
+                                $promo_code = Input::get('promo_code');
+
+                                $payment_mode = 0;
+
+                                $payment_mode = $payment_opt;
+
+                                $settings = Settings::where('key', 'promotional_code_activation')->first();
+
+                                $prom_act = $settings->value;
+
+                                if ($prom_act) {
+
+                                    if ($payment_mode == 0) {
+
+                                        $settings = Settings::where('key', 'get_promotional_profit_on_card_payment')->first();
+
+                                        $prom_act_card = $settings->value;
+
+                                        if ($prom_act_card) {
+
+                                            if ($promos = PromoCodes::where('coupon_code', $promo_code)->where('uses', '>', 0)->where('state', '=', 1)->first()) {
+
+                                                if ((date("Y-m-d H:i:s") >= date("Y-m-d H:i:s", strtotime(trim($promos->expiry)))) || (date("Y-m-d H:i:s") <= date("Y-m-d H:i:s", strtotime(trim($promos->start_date))))) {
+
+                                                    $response_array = array('success' => FALSE, 'error' => 'Promotional code is not available', 'error_code' => 505);
+
+                                                    $response_code = 200;
+
+                                                    return Response::json($response_array, $response_code);
+
+                                                } else {
+
+                                                    $promo_is_used = UserPromoUse::where('user_id', '=', $owner_id)->where('code_id', '=', $promos->id)->count();
+
+                                                    if ($promo_is_used) {
+
+                                                        $response_array = array('success' => FALSE, 'error' => 'Promotional code already used.', 'error_code' => 512);
+
+                                                        $response_code = 200;
+
+                                                        return Response::json($response_array, $response_code);
+
+                                                    } else {
+
+                                                        $promo_update_counter = PromoCodes::find($promos->id);
+
+                                                        $promo_update_counter->uses = $promo_update_counter->uses - 1;
+
+                                                        $promo_update_counter->save();
+
+
+                                                        $user_promo_entry = new UserPromoUse;
+
+                                                        $user_promo_entry->code_id = $promos->id;
+
+                                                        $user_promo_entry->user_id = $owner_id;
+
+                                                        $user_promo_entry->save();
+
+
+                                                        $owner = Owner::find($owner_id);
+
+                                                        $owner->promo_count = $owner->promo_count + 1;
+
+                                                        $owner->save();
+
+
+                                                        $request->promo_id = $promos->id;
+
+                                                        $request->promo_code = $promos->coupon_code;
+
+                                                    }
+
+                                                }
+
+                                            } else {
+
+                                                $response_array = array('success' => FALSE, 'error' => 'Promotional code is not available', 'error_code' => 505);
+
+                                                $response_code = 200;
+
+                                                return Response::json($response_array, $response_code);
+
+                                            }
+
+                                        } else {
+
+                                            $response_array = array('success' => FALSE, 'error' => 'Promotion feature is not active on card payment.', 'error_code' => 505);
+
+                                            $response_code = 200;
+
+                                            return Response::json($response_array, $response_code);
+
+                                        }
+
+                                    } else if (($payment_mode == 1)) {
+
+                                        $settings = Settings::where('key', 'get_promotional_profit_on_cash_payment')->first();
+
+                                        $prom_act_cash = $settings->value;
+
+                                        if ($prom_act_cash) {
+
+                                            if ($promos = PromoCodes::where('coupon_code', $promo_code)->where('uses', '>', 0)->where('state', '=', 1)->first()) {
+
+                                                if ((date("Y-m-d H:i:s") >= date("Y-m-d H:i:s", strtotime(trim($promos->expiry)))) || (date("Y-m-d H:i:s") <= date("Y-m-d H:i:s", strtotime(trim($promos->start_date))))) {
+
+                                                    $response_array = array('success' => FALSE, 'error' => 'Promotional code is not available', 'error_code' => 505);
+
+                                                    $response_code = 200;
+
+                                                    return Response::json($response_array, $response_code);
+
+                                                } else {
+
+                                                    $promo_is_used = UserPromoUse::where('user_id', '=', $owner_id)->where('code_id', '=', $promos->id)->count();
+
+                                                    if ($promo_is_used) {
+
+                                                        $response_array = array('success' => FALSE, 'error' => 'Promotional code already used.', 'error_code' => 512);
+
+                                                        $response_code = 200;
+
+                                                        return Response::json($response_array, $response_code);
+
+                                                    } else {
+
+                                                        $promo_update_counter = PromoCodes::find($promos->id);
+
+                                                        $promo_update_counter->uses = $promo_update_counter->uses - 1;
+
+                                                        $promo_update_counter->save();
+
+
+                                                        $user_promo_entry = new UserPromoUse;
+
+                                                        $user_promo_entry->code_id = $promos->id;
+
+                                                        $user_promo_entry->user_id = $owner_id;
+
+                                                        $user_promo_entry->save();
+
+
+                                                        $owner = Owner::find($owner_id);
+
+                                                        $owner->promo_count = $owner->promo_count + 1;
+
+                                                        $owner->save();
+
+
+                                                        $request->promo_id = $promos->id;
+
+                                                        $request->promo_code = $promos->coupon_code;
+
+                                                    }
+
+                                                }
+
+                                            } else {
+
+                                                $response_array = array('success' => FALSE, 'error' => 'Promotional code is not available', 'error_code' => 505);
+
+                                                $response_code = 200;
+
+                                                return Response::json($response_array, $response_code);
+
+                                            }
+
+                                        } else {
+
+                                            $response_array = array('success' => FALSE, 'error' => 'Promotion feature is not active on cash payment.', 'error_code' => 505);
+
+                                            $response_code = 200;
+
+                                            return Response::json($response_array, $response_code);
+
+                                        }
+
+                                    }/* else {
+
+                                      $response_array = array('success' => FALSE, 'error' => 'Payment mode is paypal', 'error_code' => 505);
+
+                                      $response_code = 200;
+
+                                      return Response::json($response_array, $response_code);
+
+                                      } */
+
+                                } else {
+
+                                    $response_array = array('success' => FALSE, 'error' => 'Promotion feature is not active.', 'error_code' => 505);
+
+                                    $response_code = 200;
+
+                                    return Response::json($response_array, $response_code);
+
+                                }
+
+                                /* $pcode = PromoCodes::where('coupon_code', Input::get('promo_code'))->first();
+
+
+
+                                  if ($pcode) {
+
+
+
+                                  $request->promo_code = $pcode->id;
+
+
+
+                                  if ($pcode->uses == 1) {
+
+                                  $pcode->status = 3;
+
+                                  }
+
+                                  $pcode->uses = $pcode->uses - 1;
+
+                                  $pcode->save();
+
+                                  } else {
+
+                                  $response_array = array('success' => false, 'Invalid Promo Code', 'error_code' => 415);
+
+                                  $response_code = 200;
+
+                                  return Response::json($response_array, $response_code);
+
+                                  } */
+
+                            }
+
+                            if ($setting_zone->value == 1) {
+
+                                $request->zone_id = $zone_id;
+                            }
+
+
+                            $request->request_start_time = date("Y-m-d H:i:s");
+
+                            $request->save();
+
+
+                            $reqserv = new RequestServices;
+
+                            $reqserv->request_id = $request->id;
+
+                            $reqserv->type = $request_type;
+
+
+                            $reqserv->save();
+
+                        }
+
+                        $i = 0;
+
+                        $first_walker_id = 0;
+
+
+                        if( !empty( $latitude ) && !empty( $longitude ) && !empty( $d_latitude ) && !empty( $d_longitude ) ) {
+
+                            $origin = $latitude . ',' . $longitude;
+                            $destination = $d_latitude . ',' . $d_longitude;
+                            $durationMatrix = returnDurationAndDestination($origin, $destination);
+                            $settings = Settings::where('key', 'default_distance_unit')->first();
+                            $unit = $settings->value;
+                            $retDistance = (string)convert($durationMatrix['distance'], $unit);
+                            $retDuration = round($durationMatrix['duration'] / 60);
+                            $reqServices = RequestServices::where('request_id', $request->id)->first();
+                            $etaCalculation = estimatedCalculationTotal($reqServices, $retDistance, $retDuration);
+                            $estimation_total = $etaCalculation['actual_total'];
+                            //$price_per_unit_time = $etaCalculation['price_per_unit_time'];
+                            //$price_per_unit_distance = $etaCalculation['price_per_unit_distance'];
+
+                        }
+
+                        $originLocation = $latitude . ',' . $longitude;
+                        $destinationLoation = ( !empty( $d_latitude ) ? $d_latitude . ',' . $d_longitude : '' );
+                        $gmapGenerationId = lastGenerationId('gmap');
+                        $gmapUrl = staticMapGeneration($gmapGenerationId,$originLocation,$destinationLoation,$request->id);
+                        $estimation['estimation'] = ( !empty( $estimation_total ) ? $estimation_total : 0 );
+                        $estimation['gmap_url'] = ( !empty( $gmapUrl ) ? $gmapUrl : '' );
+                        $estimation['pickup_address'] = ( !empty( $pickupDetails ) ? $pickupDetails : '' );
+                        $estimation['drop_address'] = ( !empty( $dropoffDetails ) ? $dropoffDetails : '' );
+
+                        foreach ($walkers as $walker) {
+
+                            $request_meta = new RequestMeta;
+
+                            $request_meta->request_id = $request->id;
+
+                            $request_meta->walker_id = $walker->id;
+
+                            if ($i == 0) {
+
+                                $first_walker_id = $walker->id;
+
+                                $driver_data = array();
+
+                                $driver_data['unique_id'] = 1;
+
+                                $driver_data['id'] = "" . $first_walker_id;
+
+                                $driver_data['first_name'] = "" . $walker->first_name;
+
+                                $driver_data['last_name'] = "" . $walker->last_name;
+
+                                $driver_data['phone'] = "" . $walker->phone;
+
+                                /*  $driver_data['email'] = "" . $walker->email; */
+
+
+                                $driver_data['picture'] = "" .  $walker->picture ;
+
+                                $driver_data['bio'] = "" . $walker->bio;
+
+                                /* $driver_data['address'] = "" . $walker->address;
+
+                                  $driver_data['state'] = "" . $walker->state;
+
+                                  $driver_data['country'] = "" . $walker->country;
+
+                                  $driver_data['zipcode'] = "" . $walker->zipcode;
+
+                                  $driver_data['login_by'] = "" . $walker->login_by;
+
+                                  $driver_data['social_unique_id'] = "" . $walker->social_unique_id;
+
+                                  $driver_data['is_active'] = "" . $walker->is_active;
+
+                                  $driver_data['is_available'] = "" . $walker->is_available; */
+
+                                $driver_data['latitude'] = "" . $walker->latitude;
+
+                                $driver_data['longitude'] = "" . $walker->longitude;
+
+                                /* $driver_data['is_approved'] = "" . $walker->is_approved; */
+
+                                $driver_data['type'] = "" . $walker->type;
+
+                                $driver_data['car_model'] = "" . $walker->car_model;
+
+                                $driver_data['car_number'] = "" . $walker->car_number;
+
+                                $driver_data['rating'] = $walker->rate;
+
+                                $driver_data['num_rating'] = $walker->rate_count;
+
+                                /* $driver_data['rating'] = DB::table('review_walker')->where('walker_id', '=', $first_walker_id)->avg('rating') ? : 0;
+
+                                  $driver_data['num_rating'] = DB::table('review_walker')->where('walker_id', '=', $first_walker_id)->count(); */
+
+                                $i++;
+
+                            }
+
+                            $request_meta->save();
+
+                        }
+
+                        $req = Requests::find($request->id);
+
+                        $req->current_walker = $first_walker_id;
+
+                        $req->save();
+
+
+                        $settings = Settings::where('key', 'provider_timeout')->first();
+
+                        $time_left = $settings->value;
+
+
+                        // Send Notification
+
+                        $walker = Walker::find($first_walker_id);
+
+                        if ($walker) {
+
+                            $msg_array = array();
+
+                            $msg_array['unique_id'] = 1;
+
+                            $msg_array['request_id'] = $request->id;
+
+                            $msg_array['time_left_to_respond'] = $time_left;
+
+                            $msg_array['payment_mode'] = $payment_opt;
+
+                            $owner = Owner::find($owner_id);
+
+                            $request_data = array();
+
+                            $request_data['estimation'] = ( !empty($estimation ) ? $estimation : 0 );
+
+                            $request_data['owner'] = array();
+
+                            $request_data['owner']['name'] = $owner->first_name . " " . $owner->last_name;
+
+                            $request_data['owner']['picture'] = $owner->picture;
+
+                            $request_data['owner']['phone'] = $owner->phone;
+
+                            $request_data['owner']['address'] = $owner->address;
+
+                            $request_data['owner']['latitude'] = $owner->latitude;
+
+                            $request_data['owner']['longitude'] = $owner->longitude;
+
+                            if ($d_latitude != NULL) {
+
+                                $request_data['owner']['d_latitude'] = $d_latitude;
+
+                                $request_data['owner']['d_longitude'] = $d_longitude;
+
+                            }
+
+                            $request_data['owner']['owner_dist_lat'] = $request->D_latitude;
+
+                            $request_data['owner']['owner_dist_long'] = $request->D_longitude;
+
+                            $request_data['owner']['payment_type'] = $payment_opt;
+
+                            $request_data['owner']['rating'] = $owner->rate;
+
+                            $request_data['owner']['num_rating'] = $owner->rate_count;
+
+                            /* $request_data['owner']['rating'] = DB::table('review_dog')->where('owner_id', '=', $owner->id)->avg('rating') ? : 0;
+
+                              $request_data['owner']['num_rating'] = DB::table('review_dog')->where('owner_id', '=', $owner->id)->count(); */
+
+                            $request_data['dog'] = array();
+
+                            if ($dog = Dog::find($owner->dog_id)) {
+
+
+                                $request_data['dog']['name'] = $dog->name;
+
+                                $request_data['dog']['age'] = $dog->age;
+
+                                $request_data['dog']['breed'] = $dog->breed;
+
+                                $request_data['dog']['likes'] = $dog->likes;
+
+                                $request_data['dog']['picture'] = $dog->image_url;
+
+                            }
+
+                            $msg_array['request_data'] = $request_data;
+
+
+
+
+                            $title = "New Request";
+
+                            $message = $msg_array;
+
+                            Log::info('response = ' . print_r($message, true));
+
+                            Log::info('first_walker_id = ' . print_r($first_walker_id, true));
+
+                            Log::info('New request = ' . print_r($message, true));
+
+                            /* don't do json_encode in above line because if */
+
+                            send_notifications($first_walker_id, "walker", $title, $message);
+
+                        } else {
+
+                            Log::info('No provider found in your area');
+
+
+                            /* $driver = Keywords::where('id', 1)->first();
+
+                              send_notifications($owner_id, "owner", 'No ' . $driver->keyword . ' Found', 'No ' . $driver->keyword . ' found for the selected service in your area currently'); */
+
+                            send_notifications($owner_id, "owner", 'No ' . Config::get('app.generic_keywords.Provider') . ' Found', 'No ' . Config::get('app.generic_keywords.Provider') . ' found for the selected service in your area currently');
+
+
+                            /* $response_array = array('success' => false, 'error' => 'No ' . $driver->keyword . ' found for the selected service in your area currently', 'error_code' => 415); */
+
+                            $response_array = array('success' => false, 'error' => 'No ' . Config::get('app.generic_keywords.Provider') . ' found for the selected service in your area currently', 'error_messages' => 'Tipo de Servicio no encontrado', 'error_code' => 415);
+
+                            $response_code = 200;
+
+                            return Response::json($response_array, $response_code);
+
+                        }
+
+                        // Send SMS
+
+                        $owner_data=Owner::find($owner_id);
+
+                        $settings = Settings::where('key', 'sms_request_created')->first();
+
+                        $pattern = $settings->value;
+
+                        $pattern = str_replace('%user%', $owner_data->first_name . " " . $owner_data->last_name, $pattern);
+
+                        $pattern = str_replace('%id%', $request->id, $pattern);
+
+                        $pattern = str_replace('%user_mobile%', $owner_data->phone, $pattern);
+
+                        sms_notification(1, 'admin', $pattern);
+
+
+                        // send email
+
+                        /* $settings = Settings::where('key', 'email_new_request')->first();
+
+                          $pattern = $settings->value;
+
+                          $pattern = str_replace('%id%', $request->id, $pattern);
+
+                          $pattern = str_replace('%url%', web_url() . "/admin/request/map/" . $request->id, $pattern);
+
+                          $subject = "New Request Created";
+
+                          email_notification(1, 'admin', $pattern, $subject); */
+
+                        $settings = Settings::where('key', 'admin_email_address')->first();
+
+                        $admin_email = $settings->value;
+
+                        $follow_url = web_url() . "/user/signin";
+
+                        $pattern = array('admin_eamil' => $admin_email, 'trip_id' => $request->id, 'follow_url' => $follow_url);
+
+                        $subject = "Ride Booking Request";
+
+                        email_notification(1, 'admin', $pattern, $subject, 'new_request', null);
+
+                        if (!empty($driver_data)) {
+
+                            $response_array = array(
+
+                                'success' => true,
+
+                                'unique_id' => 1,
+
+                                'is_referral_active' => $referral_code_activation,
+
+                                'is_referral_active_txt' => $referral_code_activation_txt,
+
+                                'is_promo_active' => $promotional_code_activation,
+
+                                'is_promo_active_txt' => $promotional_code_activation_txt,
+
+                                'request_id' => $request->id,
+
+                                'walker' => $driver_data,
+
+                                'estimation' => ( !empty($estimation ) ? $estimation : 0 ),
+
+                            );
+
+                        } else {
+
+                            $response_array = array(
+
+                                'success' => false,
+
+                                'unique_id' => 1,
+
+                                'error' => 'Tipo de Servicio no encontrado.',
+
+                                'error_messasges' => 'Tipo de Servicio no encontrado.',
+
+                                'is_referral_active' => $referral_code_activation,
+
+                                'is_referral_active_txt' => $referral_code_activation_txt,
+
+                                'is_promo_active' => $promotional_code_activation,
+
+                                'is_promo_active_txt' => $promotional_code_activation_txt,
+
+                                'request_id' => $request->id,
+
+                                'error_code' => 411,
+
+                                'walker' => $driver_data,
+
+                            );
+
+                        }
+
+                        $response_code = 200;
+
+                    }
+
+                } else {
+
+                    $response_array = array('success' => false, 'error' => 'Token Expirado', 'error_code' => 405);
+
+                    $response_code = 200;
+
+                }
+
+            } else {
+
+                if ($is_admin) {
+
+                    /* $response_array = array('success' => false, 'error' => '' . $var->keyword . ' ID not Found', 'error_code' => 410); */
+
+                    $response_array = array('success' => false, 'error' => '' . Config::get('app.generic_keywords.User') . ' ID not Found', 'error_code' => 410);
+
+                } else {
+
+                    $response_array = array('success' => false, 'error' => 'No es un token valido', 'error_code' => 406);
+
+                }
+
+                $response_code = 200;
+
+            }
+
+        }
+
+
+        // $response = Response::json($response_array, $response_code);
+        $response = json_encode(array($response_array, $response_code));
+        return $response;
+
+
+        DontcreateReq:
+
+        Log::info('Request not created ');
+
+
+    }
+
 
     public function isAdmin($token)
     {
